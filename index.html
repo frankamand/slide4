@@ -1622,7 +1622,15 @@ tr.cur td { font-weight: 700; }
 <script>
 // Offline support and home-screen install
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}); });
+  // When a new version takes over, reload once so the update shows straight away (not mid-game).
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return;
+    const splash = document.getElementById('splash');
+    if (splash && splash.hidden) return; // a game is in progress: the update applies next launch
+    reloaded = true; location.reload();
+  });
 }
 </script>
 </body>

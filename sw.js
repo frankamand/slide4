@@ -1,7 +1,7 @@
 // Slide 4 service worker: keeps the game on the device so it opens instantly and works offline.
 // The page itself is fetched fresh when online (so updates arrive on the next launch);
 // everything else comes from the cache. Bump VERSION when fonts, icons or scripts change.
-const VERSION = 'slide4-v1';
+const VERSION = 'slide4-v2';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './js/samjs.min.js',
   './fonts/bricolage-grotesque-latin-500-normal.woff2', './fonts/bricolage-grotesque-latin-800-normal.woff2',
@@ -21,7 +21,8 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
     // Page: network first, cached copy when offline.
-    e.respondWith(fetch(req).then(res => {
+    // no-cache: always check with GitHub, never reuse a stale HTTP-cached page.
+    e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
       const copy = res.clone();
       caches.open(VERSION).then(c => c.put('./index.html', copy));
       return res;
