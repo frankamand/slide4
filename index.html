@@ -28,7 +28,6 @@ img{max-width:100%}
 @font-face{font-family:"JetBrains Mono";font-weight:500;font-style:normal;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2")}
 @font-face{font-family:"JetBrains Mono";font-weight:700;font-style:normal;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2")}
 </style>
-
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: one centred column — name and controls, a slate-grey tray with 25 wells, then a small test log. */
@@ -452,7 +451,7 @@ tr.cur td { font-weight: 700; }
   const pimpBox = document.getElementById('pimp');
   const soundBox = document.getElementById('sound');
   try {
-    pimpBox.checked = localStorage.getItem('slide4-pimp') === '1';
+    pimpBox.checked = localStorage.getItem('slide4-pimp') !== '0'; // symbols on unless turned off
     soundBox.checked = localStorage.getItem('slide4-sound') !== '0';
   } catch (e) {}
   board.classList.toggle('pimp', pimpBox.checked);
