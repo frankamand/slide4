@@ -1,0 +1,1630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Slide tiles into the gap and line up four of a colour.">
+<meta name="theme-color" content="#141715">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Slide 4">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>Slide 4</title>
+<script src="js/samjs.min.js"></script>
+<style>
+@font-face{font-family:"Bricolage Grotesque";font-weight:500;font-style:normal;font-display:swap;src:url(fonts/bricolage-grotesque-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Bricolage Grotesque";font-weight:800;font-style:normal;font-display:swap;src:url(fonts/bricolage-grotesque-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:500;font-style:normal;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:700;font-style:normal;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2")}
+</style>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one centred column — name and controls, a slate-grey tray with 25 wells, then a small test log. */
+:root {
+  --bg: #eceee8;
+  --tray: #d6dad1;
+  --well: #c6cbc0;
+  --fg: #1c2320;
+  --muted: #5a645d;
+  --line: #c9cec4;
+  --accent: #1c2320;
+  --time: #2f9e5b;
+  --survive: #f28c1e;
+  --danger: #d9443f;
+  --scrim: rgba(236, 238, 232, 0.9);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141715; --tray: #232825; --well: #1a1e1c; --fg: #e7ebe5;
+    --muted: #96a198; --line: #2e3531; --accent: #e7ebe5; color-scheme: dark;
+    --time: #4cc47a; --danger: #ef5b55; --scrim: rgba(20, 23, 21, 0.9);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141715; --tray: #232825; --well: #1a1e1c; --fg: #e7ebe5;
+  --muted: #96a198; --line: #2e3531; --accent: #e7ebe5; color-scheme: dark;
+  --time: #4cc47a; --danger: #ef5b55; --scrim: rgba(20, 23, 21, 0.9);
+}
+
+html, body { min-height: 100%; overscroll-behavior: none; }
+.tray { touch-action: none; }
+body:not(.test) .testonly { display: none !important; }
+.initials { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ini-head { font-family: var(--font-display) !important; font-weight: 600; }
+.wheels { display: flex; gap: 10px; }
+.wheel { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wheel button { width: 52px; padding: 4px 0; font-size: 0.9rem; line-height: 1; }
+.wheel .ch {
+  width: 52px; height: 58px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-num); font-weight: 700; font-size: 2rem; background: var(--tray); border: 2px solid var(--line); border-radius: 10px;
+}
+.wheel.cur .ch { border-color: var(--fg); }
+.initials .play { padding: 10px 28px; font-weight: 700; }
+.overbtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+button.ghost { background: transparent; }
+
+.splash {
+  position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow-y: auto; overscroll-behavior: contain;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.sp-inner { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.sp-title h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(2.6rem, 13vw, 3.4rem); letter-spacing: -0.03em; line-height: 0.95; }
+.sp-title h2 .four { font-family: var(--font-num); font-weight: 700; }
+.sp-title p { margin: 8px 0 0; color: var(--muted); font-size: 0.95rem; }
+.sp-demo { display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--tray); border-radius: 18px; padding: 14px 14px 10px; }
+.demo { position: relative; width: min(62vw, 210px); aspect-ratio: 1; max-width: 100%; }
+.demo .slot, .demo .tile { padding: 2px; }
+.demo .slot i, .demo .tile b { border-radius: 22%; }
+.demo .tile b { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), inset 0 2px 0 rgba(255,255,255,0.3); }
+.demo .tile { transition: transform 260ms cubic-bezier(.3,.7,.3,1); }
+.demo .tap {
+  position: absolute; width: 20%; height: 20%; left: 0; top: 0; z-index: 3; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; opacity: 0;
+}
+.demo .tap::after { content: ""; width: 58%; height: 58%; border-radius: 50%; border: 3px solid var(--fg); background: color-mix(in srgb, var(--fg) 18%, transparent); }
+.demo .tap.show { animation: tap 0.6s ease-out forwards; }
+@keyframes tap { 0% { opacity: 0; transform: scale(1.4); } 40% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(0.9); } }
+.demo .plus {
+  position: absolute; left: 0; right: 0; top: 40%; height: 20%; z-index: 4; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-num); font-weight: 700; font-size: 1.05rem; color: var(--bg); pointer-events: none; opacity: 0;
+}
+.demo .plus span { background: var(--fg); padding: 2px 8px; border-radius: 6px; }
+.demo .plus.show { animation: plus 1.2s ease-out forwards; }
+@keyframes plus { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+.sp-demo-cap { font-size: 0.82rem; color: var(--muted); min-height: 1.3em; text-align: center; }
+.sp-section { display: flex; flex-direction: column; gap: 10px; }
+.sp-section h3 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--tray); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button { border: 0; background: transparent; border-radius: 9px; padding: 10px 8px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.sp-note { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.45; }
+.sp-actions { display: flex; gap: 8px; }
+.sp-actions button { flex: 1; padding: 13px 16px; font-size: 1.05rem; font-weight: 700; border-radius: 12px; }
+button.play { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.hs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hs .n { font-family: var(--font-num); font-weight: 700; letter-spacing: 0.08em; }
+.hs li { display: grid; grid-template-columns: 1.6rem 2.8rem 1fr auto auto; gap: 10px; align-items: baseline; padding: 8px 2px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.hs li:first-child { border-top: 1px solid var(--line); }
+.hs .r { font-family: var(--font-num); color: var(--muted); font-size: 0.85rem; }
+.hs .s { font-family: var(--font-num); font-weight: 700; font-size: 1.1rem; }
+.hs .c, .hs .d { font-size: 0.8rem; color: var(--muted); text-align: right; }
+.hs li.empty { display: block; color: var(--muted); font-size: 0.88rem; border: 0; padding: 4px 0; }
+.sp-share { display: flex; flex-direction: column; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sp-share label { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+.sp-share input { width: 18px; height: 18px; accent-color: var(--fg); margin: 0; }
+.sp-share .sp-note { font-size: 0.8rem; }
+.statcopy { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 300px; }
+.statcopy p { font-family: var(--font-body) !important; font-size: 0.85rem; }
+.statcopy textarea { width: 100%; font-family: var(--font-num); font-size: 0.7rem; background: var(--tray); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; resize: none; }
+.sp-test { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.9rem; cursor: pointer; padding-top: 6px; border-top: 1px solid var(--line); padding-block: 14px 0; }
+.sp-test input { width: 18px; height: 18px; accent-color: var(--fg); margin: 0; }
+.sp-test span { color: var(--muted); font-size: 0.8rem; flex-basis: 100%; padding-left: 26px; }
+@media (prefers-reduced-motion: reduce) { .demo .tile { transition-duration: 1ms; } }
+
+details.more { border-top: 1px solid var(--line); padding-top: 10px; }
+details.more > summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::after { content: '+'; font-family: var(--font-num); font-size: 1rem; }
+details.more[open] > summary::after { content: '–'; }
+details.more[open] > summary { margin-bottom: 12px; }
+.morebody { display: flex; flex-direction: column; gap: 14px; }
+#fs { padding: 7px 10px; }
+:fullscreen body, body.fs { overflow: hidden; }
+:fullscreen .wrap { padding-top: 8px; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap {
+  max-width: 440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 .four { font-family: var(--font-num); font-weight: 700; }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+select:disabled { opacity: 0.7; cursor: default; }
+label.sel { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+select, button {
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--fg);
+  background: var(--tray);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+select { font-family: var(--font-num); text-transform: none; letter-spacing: 0; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.stat .v { font-family: var(--font-num); font-weight: 700; font-size: 1.6rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .v.bump { animation: bump 0.35s ease-out; }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.stat .v { display: inline-block; transform-origin: left center; }
+
+.tray {
+  background: var(--tray);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 0 var(--line);
+}
+.board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.slot, .tile {
+  position: absolute;
+  left: 0; top: 0;
+  width: 20%; height: 20%;
+  padding: clamp(3px, 1vw, 5px);
+  box-sizing: border-box;
+}
+.slot i {
+  display: block; width: 100%; height: 100%;
+  border-radius: 20%;
+  background: var(--well);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.18);
+}
+.tile { transition: transform 150ms cubic-bezier(.3,.7,.3,1); z-index: 1; }
+.tile.moving { z-index: 2; }
+.tile b {
+  display: block; width: 100%; height: 100%;
+  border-radius: 20%;
+  background: var(--c);
+  box-shadow: inset 0 -5px 0 rgba(0,0,0,0.2), inset 0 3px 0 rgba(255,255,255,0.35), 0 2px 3px rgba(0,0,0,0.18);
+  transition: transform 120ms ease, filter 120ms ease;
+}
+.tile b { display: flex; align-items: center; justify-content: center; }
+.tile b svg { width: 56%; height: 56%; fill: var(--ink, rgba(255,255,255,0.88)); filter: drop-shadow(0 1px 0 rgba(0,0,0,0.15)); }
+.board:not(.pimp) .tile b svg { display: none; }
+.opts { display: flex; gap: 18px; flex-wrap: wrap; margin-top: -6px; }
+.opts label { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; }
+.opts input { width: 18px; height: 18px; accent-color: var(--fg); margin: 0; }
+.voicepick { display: flex; align-items: center; gap: 6px; }
+.voicepick select { max-width: 11rem; }
+.voicepick button { padding: 6px 10px; font-size: 0.85rem; }
+.tile.can { cursor: pointer; }
+.tile.can b { filter: brightness(1.06); }
+.tile.can:active b { transform: scale(0.94); }
+.tile.match b { animation: pulse 320ms ease-out forwards; }
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 4px var(--fg), inset 0 -5px 0 rgba(0,0,0,0.2); }
+  100% { transform: scale(0.15); }
+}
+.tile.grow b { animation: grow 220ms cubic-bezier(.3,1.4,.5,1) forwards; }
+@keyframes grow { from { transform: scale(0.15); } to { transform: scale(1); } }
+
+.hint { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.5; max-width: 60ch; }
+.hint strong { color: var(--fg); font-weight: 600; }
+
+.timebar { display: flex; flex-direction: column; gap: 6px; margin-top: -4px; }
+.tb-track { position: relative; height: 14px; border-radius: 7px; background: var(--well); box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+.tb-fill { position: absolute; inset: 0 auto 0 0; width: 100%; border-radius: 7px; background: var(--time); transition: background 0.3s; }
+.timebar.low .tb-fill { background: var(--danger); animation: blink 0.8s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.55; } }
+.tb-bonus { position: absolute; right: 4px; top: -22px; font-family: var(--font-num); font-weight: 700; font-size: 0.9rem; color: var(--time); opacity: 0; }
+.tb-bonus.pop { animation: bonus 0.9s ease-out; }
+@keyframes bonus { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
+.tb-info { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-num); font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.tray { position: relative; transition: box-shadow 0.3s; }
+.tray.survive { box-shadow: 0 0 0 4px var(--survive), 0 0 18px var(--survive); }
+.banner {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 5; opacity: 0;
+}
+.banner span {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 8vw, 2.4rem); letter-spacing: -0.01em;
+  background: var(--fg); color: var(--bg); padding: 8px 18px; border-radius: 12px; text-transform: uppercase;
+}
+.banner.show { animation: banner 1.7s ease-out forwards; }
+@keyframes banner { 0% { opacity: 0; transform: scale(0.8); } 12% { opacity: 1; transform: scale(1.05); } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.over {
+  position: absolute; inset: 0; z-index: 6; border-radius: 18px; background: var(--scrim);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px;
+}
+.over h2 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 2.2rem; letter-spacing: -0.02em; }
+.over p { margin: 0; font-family: var(--font-num); line-height: 1.6; }
+.over button { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; padding: 10px 18px; }
+
+.log h2 {
+  font-family: var(--font-display); font-weight: 500; font-size: 1rem; margin: 0 0 6px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+}
+.log h2 button { font-size: 0.78rem; padding: 4px 8px; background: transparent; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-family: var(--font-num); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+th { font-family: var(--font-body); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+td { text-align: right; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+tr.cur td { font-weight: 700; }
+.empty { color: var(--muted); font-size: 0.85rem; margin: 4px 0 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile { transition-duration: 1ms; }
+  .tile.match b, .tile.grow b, .stat .v.bump { animation-duration: 1ms; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Slide <span class="four">4</span></h1>
+    <div class="controls">
+      <label class="sel testonly" for="mode">Mode
+        <select id="mode"><option value="free">Free</option><option value="timed">Timed</option></select>
+      </label>
+      <label class="sel testonly" for="colors">Colors
+        <select id="colors">
+          <option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+        </select>
+      </label>
+      <button id="newgame" type="button">New game</button>
+      <button id="menu" type="button">Menu</button>
+    </div>
+  </header>
+
+  <div class="opts">
+    <label class="testonly" for="pimp"><input type="checkbox" id="pimp"> Pimp</label>
+    <label class="testonly" for="sound"><input type="checkbox" id="sound" checked> Sound</label>
+    <label for="music"><input type="checkbox" id="music"> Music</label>
+    <button id="fs" type="button" title="Full screen" hidden>Full screen</button>
+    <span class="voicepick" id="voicepick">
+      <label class="sel" for="voice">Voice
+        <select id="voice">
+          <option value="sam-deep">C64 SAM, deep</option>
+          <option value="sam">C64 SAM, classic</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+      <button id="voicetest" type="button" title="Plays each game phrase in turn">Test</button>
+    </span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="k">Score</span><span class="v" id="score">0</span></div>
+    <div class="stat testonly"><span class="k">Moves</span><span class="v" id="moves">0</span></div>
+    <div class="stat"><span class="k" id="ratiok">Moves / 1000</span><span class="v" id="ratio">–</span></div>
+  </div>
+
+  <div class="timebar" id="timebar" hidden>
+    <div class="tb-track"><div class="tb-fill" id="tbfill"></div><span class="tb-bonus" id="tbbonus"></span></div>
+    <div class="tb-info"><span id="tbsec">Starts on your first move</span><span id="tbcolors">6 colors</span></div>
+  </div>
+
+  <div class="tray">
+    <div class="board" id="board" aria-label="5 by 5 sliding board"></div>
+    <div class="banner" id="banner" aria-live="polite"></div>
+    <div class="over" id="over" hidden>
+      <h2>Game over</h2>
+      <p id="overtext"></p>
+      <div class="initials" id="initials" hidden>
+        <p class="ini-head">Top five! Enter your initials</p>
+        <div class="wheels" id="wheels"></div>
+        <button id="initok" type="button" class="play">OK</button>
+      </div>
+      <div class="statcopy" id="statcopy" hidden>
+        <p>Your stats couldn't be sent from here. Copy them and send them to Frank:</p>
+        <button id="statcopybtn" type="button">Copy stats</button>
+        <textarea id="statcopytext" readonly rows="2" aria-label="Game stats"></textarea>
+      </div>
+      <div class="overbtns" id="overbtns">
+        <button id="again" type="button">Play again</button>
+        <button id="overmenu" type="button" class="ghost">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="more testonly" id="more">
+    <summary>Rules, voice and stats</summary>
+    <div class="morebody">
+      <div id="voiceslot"></div>
+  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
+  <p class="hint"><strong>Timed:</strong> you start with 6 colours and a one-minute bar that runs down. A line of 4 adds 5 seconds, a line of 5 adds 15. Every two minutes another colour joins, up to 10. The game ends when the bar runs out.</p>
+
+  <section class="log">
+    <h2>Totals per colour count <button id="resetlog" type="button">Clear</button></h2>
+    <div id="logbody"></div>
+  </section>
+    </div>
+  </details>
+</div>
+
+<div class="splash" id="splash" role="dialog" aria-label="Slide 4 start screen">
+  <div class="sp-inner">
+    <div class="sp-title"><h2>Slide <span class="four">4</span></h2><p>Slide tiles into the gap. Line up four of a colour.</p></div>
+
+    <div class="sp-demo">
+      <div class="demo" id="demo" aria-hidden="true"></div>
+      <div class="sp-demo-cap" id="democap">Tap a tile next to the gap</div>
+    </div>
+
+    <div class="sp-section">
+      <div class="seg" role="group" aria-label="Game mode">
+        <button type="button" id="sp-free" aria-pressed="false">Free play</button>
+        <button type="button" id="sp-timed" aria-pressed="true">Timed</button>
+      </div>
+      <p class="sp-note" id="sp-modenote">One minute on the clock. Lines add time, and a colour joins every two minutes.</p>
+      <div class="sp-actions">
+        <button type="button" id="sp-play" class="play">Play</button>
+        <button type="button" id="sp-resume" class="ghost" hidden>Resume</button>
+      </div>
+    </div>
+
+    <div class="sp-section">
+      <h3>Timed high scores</h3>
+      <ol class="hs" id="hslist"></ol>
+      <p class="sp-note" id="hsnote"></p>
+    </div>
+
+    <div class="sp-share">
+      <label for="sp-share"><input type="checkbox" id="sp-share"> Share my game stats with Frank</label>
+      <p class="sp-note">Helps tune the difficulty. For each timed game you finish it sends your score, moves, game length, colours reached, the lines you made and when, plus your initials and a random player code. Nothing else, and only while this box is ticked.</p>
+      <p class="sp-note" id="sp-sharestate"></p>
+    </div>
+
+    <label class="sp-test" for="sp-testmode"><input type="checkbox" id="sp-testmode"> Test mode <span>colour count, sound and voice settings, stats</span></label>
+  </div>
+</div>
+
+<script>
+(function () {
+  const N = 5;
+  // Ordered so small colour counts stay well separated.
+  const PALETTE = ['#e5484d', '#f2cf3a', '#3fae5a', '#2f7fe0', '#8a5ad6', '#f58a2b', '#1db3a6', '#e65fae', '#8b5a3a', '#f3f3ec', '#3a3f3c', '#b6d63a'];
+  // One symbol per colour, same order as PALETTE; dark ink on the light tiles.
+  const SYMBOLS = [
+    { d: 'M12 21s-7.5-4.6-9.6-9.2C.8 7.9 3.3 4 7 4c2.1 0 3.6 1.1 5 2.9C13.4 5.1 14.9 4 17 4c3.7 0 6.2 3.9 4.6 7.8C19.5 16.4 12 21 12 21z' },
+    { d: 'M12 2.5l2.9 6.2 6.8.8-5 4.7 1.3 6.7L12 17.6 6 20.9l1.3-6.7-5-4.7 6.8-.8z', ink: 'rgba(60,45,0,0.55)' },
+    { d: 'M12 2.5a4.2 4.2 0 0 1 3.6 6.4 4.2 4.2 0 1 1-2.3 7.4l1.2 4.7h-5l1.2-4.7a4.2 4.2 0 1 1-2.3-7.4A4.2 4.2 0 0 1 12 2.5z' },
+    { d: 'M12 2.5S5.5 10 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10 12 2.5 12 2.5z' },
+    { d: 'M12 2.5S3.5 9 3.5 13.5a4.2 4.2 0 0 0 7.2 3L9.5 21h5l-1.2-4.5a4.2 4.2 0 0 0 7.2-3C20.5 9 12 2.5 12 2.5z' },
+    { d: 'M12 2.5l7.5 9.5-7.5 9.5L4.5 12z', ink: 'rgba(80,30,0,0.5)' },
+    { d: 'M15.5 3a9 9 0 1 0 5.5 14.6A7.5 7.5 0 0 1 15.5 3z' },
+    { d: 'M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z' },
+    { d: 'M12 3.5l9 16H3z' },
+    { d: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17zm0 4.5a4 4 0 1 1 0 8a4 4 0 1 1 0-8z', ink: 'rgba(30,35,32,0.45)' },
+    { d: 'M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z' },
+    { d: 'M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z', ink: 'rgba(40,55,0,0.55)' }
+  ];
+  const board = document.getElementById('board');
+  const pimpBox = document.getElementById('pimp');
+  const soundBox = document.getElementById('sound');
+  try {
+    pimpBox.checked = localStorage.getItem('slide4-pimp') === '1';
+    soundBox.checked = localStorage.getItem('slide4-sound') !== '0';
+  } catch (e) {}
+  board.classList.toggle('pimp', pimpBox.checked);
+  pimpBox.addEventListener('change', () => {
+    board.classList.toggle('pimp', pimpBox.checked);
+    try { localStorage.setItem('slide4-pimp', pimpBox.checked ? '1' : '0'); } catch (e) {}
+  });
+  soundBox.addEventListener('change', () => {
+    try { localStorage.setItem('slide4-sound', soundBox.checked ? '1' : '0'); } catch (e) {}
+  });
+
+  // Sounds, synthesised; the audio context starts on the first tap.
+  let ac = null;
+  function audio() {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function note(freq, t0, dur, type, vol) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  // Slide sound ("chick, noise only"), rendered once into a buffer when the page loads; each move just plays that buffer.
+  // A coarse noise scrape around 2 kHz, then a short muffled click at 0.12 s. Noise is downsampled to about 4 kHz
+  // and comes from a seeded generator, so the sound is identical on every move and every visit.
+  let slideBuf = null, slideRendering = false;
+  function renderSlide() {
+    if (slideBuf || slideRendering) return;
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OAC) return;
+    slideRendering = true;
+    const sr = 44100, len = Math.ceil(sr * 0.2);
+    const oc = new OAC(1, len, sr);
+    const nb = oc.createBuffer(1, Math.floor(sr * 0.3), sr);
+    const d = nb.getChannelData(0);
+    const hold = Math.max(1, Math.round(sr / 4000));
+    let seed = 12345, v = 0;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
+    for (let i = 0; i < d.length; i++) { if (i % hold === 0) v = rnd() * 2 - 1; d[i] = v; }
+    const hit = (t, type, freq, q, peak, dur) => {
+      const n = oc.createBufferSource(), f = oc.createBiquadFilter(), g = oc.createGain();
+      n.buffer = nb;
+      f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      n.connect(f); f.connect(g); g.connect(oc.destination);
+      n.start(t); n.stop(t + dur + 0.01);
+    };
+    hit(0.001, 'bandpass', 2000, 0.7, 0.12, 0.12);
+    hit(0.121, 'lowpass', 2400, 0, 0.15, 0.04);
+    const done = (buf) => { slideBuf = buf; slideRendering = false; };
+    const pr = oc.startRendering();
+    if (pr && pr.then) pr.then(done, () => { slideRendering = false; });
+    else oc.oncomplete = (e) => done(e.renderedBuffer);
+  }
+  try { renderSlide(); } catch (e) {}
+  function playSlide() {
+    if (!soundBox.checked || !audio()) return;
+    if (!slideBuf) { renderSlide(); return; }
+    const s = ac.createBufferSource();
+    s.buffer = slideBuf;
+    s.connect(ac.destination);
+    s.start(ac.currentTime + 0.003);
+  }
+  // ---- Music: C64-flavoured post-disco funk, sequenced live ----
+  // A lookahead scheduler queues notes ~0.15 s ahead. Voices: pulse-wave lead with vibrato, glide and echo;
+  // octave bass on a square wave; saw pads; drums from downsampled noise. 8-bar loop in A minor, 4 sections:
+  // groove, solo, solo, breakdown.
+  const music = (() => {
+    const BPM = 106, S16 = 60 / BPM / 4, SWING = 0.1;
+    const BARS = [
+      { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
+      { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
+      { root: 38, pad: [53, 57, 60, 64], tones: [2, 5, 9, 0, 4] },    // Dm9
+      { root: 38, pad: [53, 57, 60, 64], tones: [2, 5, 9, 0, 4] },    // Dm9
+      { root: 29, pad: [57, 60, 64, 67], tones: [5, 9, 0, 4, 7] },    // Fmaj9
+      { root: 31, pad: [55, 59, 62, 64], tones: [7, 11, 2, 4] },      // G6
+      { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
+      { root: 28, pad: [56, 62, 67, 71], tones: [4, 8, 2, 7, 11] }    // E7#9
+    ];
+    const PENT = [9, 0, 2, 4, 7];
+    const BASS = { 0: 0, 2: 12, 3: 0, 6: 12, 8: 0, 10: 12, 11: 0, 13: 12, 14: 0 };
+    const RHYTHMS = [
+      [[0, 2], [2, 2], [4, 1], [5, 1], [6, 4], [11, 1], [12, 2], [14, 2]],
+      [[0, 6], [6, 2], [8, 2], [10, 1], [11, 1], [12, 4]],
+      [[2, 1], [3, 1], [4, 2], [6, 2], [8, 8]],
+      [[0, 1], [1, 1], [2, 1], [3, 1], [4, 2], [7, 2], [10, 6]],
+      [[3, 3], [6, 3], [9, 3], [12, 4]],
+      [[0, 2], [3, 1], [4, 3], [8, 1], [9, 1], [10, 2], [12, 4]]
+    ];
+    const LONG = [[0, 12], [12, 1], [13, 1], [14, 2]];
+    let master = null, padBus, leadOsc, leadGain, vibGain, drumNoise, pulse25, pulse50, pulse35;
+    let timer = null, nextTime = 0, step = 0, playing = false, barNotes = {}, leadPitch = 76, slapNotes = {};
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+
+    function pulseWave(duty) {
+      const n = 40, re = new Float32Array(n), im = new Float32Array(n);
+      for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty);
+      return ac.createPeriodicWave(re, im);
+    }
+    function build() {
+      master = ac.createGain(); master.gain.value = 0;
+      const lofi = ac.createBiquadFilter(); lofi.type = 'lowpass'; lofi.frequency.value = 6500;
+      master.connect(lofi); lofi.connect(ac.destination);
+      pulse25 = pulseWave(0.25); pulse50 = pulseWave(0.5); pulse35 = pulseWave(0.35);
+      // Pads share one soft filter
+      padBus = ac.createBiquadFilter(); padBus.type = 'lowpass'; padBus.frequency.value = 1100; padBus.Q.value = 0.7;
+      padBus.connect(master);
+      // Drum noise: held values at about 8 kHz for SID grit
+      drumNoise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = drumNoise.getChannelData(0), hold = Math.max(1, Math.round(ac.sampleRate / 8000));
+      let v = 0;
+      for (let i = 0; i < d.length; i++) { if (i % hold === 0) v = Math.random() * 2 - 1; d[i] = v; }
+    }
+    // Lead: one persistent voice (two oscillators, optional drive, filter, echo) whose timbre changes per solo,
+    // plus per-note voices for the marimba. Each solo section takes the next instrument in LEADS.
+    const LEADS = ['saw', 'flute', 'guitar', 'marimba'];
+    let leadOsc2, leadMix2, leadShaper, leadClean, leadDrive, leadLP, leadInst = 'saw', soloNum = 0;
+    const TIMBRE = {
+      saw:     { type: 'sawtooth', mix2: 0,   drive: 0,  lp: 3200, q: 3,   level: 0.12, attack: 0.006, glide: 0.012, vib: 22 },
+      flute:   { type: 'triangle', mix2: 0,   drive: 0,  lp: 3000, q: 0.5, level: 0.22, attack: 0.035, glide: 0.02,  vib: 30 },
+      guitar:  { type: 'sawtooth', mix2: 0.6, drive: 6,  lp: 2600, q: 1.5, level: 0.07, attack: 0.003, glide: 0.008, vib: 38 },
+      marimba: { type: 'sine',     mix2: 0,   drive: 0,  lp: 5000, q: 0.5, level: 0,    attack: 0.002, glide: 0,     vib: 0 }
+    };
+    function driveCurve(k) {
+      const n = 1024, c = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(k * x) / Math.tanh(k); }
+      return c;
+    }
+    function buildLead() {
+      leadOsc = ac.createOscillator(); leadOsc.type = 'sawtooth'; leadOsc.frequency.value = hz(leadPitch);
+      leadOsc2 = ac.createOscillator(); leadOsc2.type = 'square'; leadOsc2.detune.value = 10; leadOsc2.frequency.value = hz(leadPitch);
+      leadMix2 = ac.createGain(); leadMix2.gain.value = 0;
+      const lfo = ac.createOscillator(); lfo.frequency.value = 5.6;
+      vibGain = ac.createGain(); vibGain.gain.value = 0;
+      lfo.connect(vibGain); vibGain.connect(leadOsc.detune); vibGain.connect(leadOsc2.detune);
+      leadGain = ac.createGain(); leadGain.gain.value = 0;
+      // Clean and overdriven paths in parallel; the timbre picks the mix (the shaper curve is set once).
+      leadShaper = ac.createWaveShaper(); leadShaper.curve = driveCurve(6);
+      leadClean = ac.createGain(); leadDrive = ac.createGain(); leadDrive.gain.value = 0;
+      leadLP = ac.createBiquadFilter(); leadLP.type = 'lowpass'; leadLP.frequency.value = 3200; leadLP.Q.value = 3;
+      const echo = ac.createDelay(1); echo.delayTime.value = S16 * 3;
+      const fb = ac.createGain(); fb.gain.value = 0.3;
+      const wet = ac.createGain(); wet.gain.value = 0.28;
+      leadOsc.connect(leadGain); leadOsc2.connect(leadMix2); leadMix2.connect(leadGain);
+      leadGain.connect(leadClean); leadClean.connect(leadLP);
+      leadGain.connect(leadShaper); leadShaper.connect(leadDrive); leadDrive.connect(leadLP);
+      leadLP.connect(master);
+      leadLP.connect(echo); echo.connect(fb); fb.connect(echo); echo.connect(wet); wet.connect(master);
+      leadOsc.start(); leadOsc2.start(); lfo.start();
+      leadOsc._lfo = lfo;
+      setLeadTimbre(leadInst);
+    }
+    function setLeadTimbre(name) {
+      leadInst = name;
+      const T = TIMBRE[name];
+      leadOsc.type = T.type;
+      leadMix2.gain.value = T.mix2;
+      leadClean.gain.value = T.drive ? 0 : 1;
+      leadDrive.gain.value = T.drive ? 1 : 0;
+      leadLP.frequency.value = T.lp; leadLP.Q.value = T.q;
+    }
+    function marimbaNote(m, t) {
+      // Mallet: sine fundamental plus the bar's inharmonic overtones (about 4x and 9.9x), each decaying fast.
+      [[1, 0.3, 0.55], [3.98, 0.09, 0.14], [9.9, 0.035, 0.05]].forEach(([mul, vol, dec]) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'sine'; o.frequency.value = hz(m) * mul;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dec);
+        o.connect(g); g.connect(leadLP); o.start(t); o.stop(t + dec + 0.02);
+      });
+    }
+
+    function noiseHit(t, type, freq, vol, dur, q) {
+      const n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      n.buffer = drumNoise;
+      f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      n.connect(f); f.connect(g); g.connect(master);
+      n.start(t, Math.random() * 0.8); n.stop(t + dur + 0.01);
+    }
+    function kick(t, vol) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.26);
+    }
+    function snare(t, vol) {
+      noiseHit(t, 'bandpass', 1700, 0.5 * vol, 0.13, 0.7);
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'triangle'; o.frequency.value = 185;
+      g.gain.setValueAtTime(0.28 * vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08);
+    }
+    function bass(m, t, dur, solo, vol) {
+      vol = vol || 1;
+      const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+      o.setPeriodicWave(pulse50); o.frequency.value = hz(m);
+      f.type = 'lowpass'; f.Q.value = solo ? 5 : 3;
+      f.frequency.setValueAtTime(solo ? 2800 : 1800, t); f.frequency.exponentialRampToValueAtTime(solo ? 650 : 380, t + (solo ? 0.18 : 0.12));
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.34 * vol, t + 0.006);
+      g.gain.setValueAtTime(0.3 * vol, t + dur * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+    }
+    function pad(notes, t, dur, vol) {
+      notes.forEach((m, i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = i % 2 ? 7 : -7;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(vol, t + 0.2);
+        g.gain.setValueAtTime(vol, t + dur - 0.05);
+        g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.15);
+        o.connect(g); g.connect(padBus); o.start(t); o.stop(t + dur + 0.2);
+      });
+    }
+    function lead(m, t, dur) {
+      if (leadInst === 'marimba') {
+        marimbaNote(m, t);
+        if (dur > 0.5) marimbaNote(m, t + S16 * 2); // let long notes ring as a quick repeat, marimba style
+        return;
+      }
+      const T = TIMBRE[leadInst], f = hz(m);
+      [leadOsc, leadOsc2].forEach(o => {
+        o.frequency.cancelScheduledValues(t);
+        if (leadInst === 'guitar' && dur > 0.3 && Math.random() < 0.5) {
+          // Guitar-style bend up from a whole step below
+          o.frequency.setValueAtTime(hz(m - 2), t);
+          o.frequency.setTargetAtTime(f, t + 0.04, 0.045);
+        } else {
+          o.frequency.setTargetAtTime(f, t, T.glide);
+        }
+      });
+      leadGain.gain.cancelScheduledValues(t);
+      leadGain.gain.setTargetAtTime(T.level, t, T.attack);
+      if (leadInst === 'guitar') leadGain.gain.setTargetAtTime(T.level * 0.6, t + 0.05, 0.15);
+      leadGain.gain.setTargetAtTime(0.0001, t + dur * 0.9, leadInst === 'flute' ? 0.05 : 0.03);
+      if (leadInst === 'flute') noiseHit(t, 'bandpass', Math.min(8000, f * 3), 0.06, 0.06, 1.5); // breathy chiff
+      vibGain.gain.cancelScheduledValues(t);
+      vibGain.gain.setValueAtTime(0, t);
+      if (dur > 0.25) vibGain.gain.linearRampToValueAtTime(T.vib, t + Math.min(dur, leadInst === 'flute' ? 0.3 : 0.45));
+    }
+
+    // Improvise one bar of solo over the chord: walk the pentatonic, land on chord tones on the beat.
+    function phrase(bar, B) {
+      const rh = bar % 8 === 7 || Math.random() < 0.15 ? LONG : RHYTHMS[Math.floor(Math.random() * RHYTHMS.length)];
+      const notes = {};
+      const pool = [];
+      for (let m = 62; m <= 88; m++) if (PENT.includes(m % 12) || B.tones.includes(m % 12)) pool.push(m);
+      rh.forEach(([s, len]) => {
+        if (Math.random() < 0.08) return;
+        const strong = s % 4 === 0 || len >= 4;
+        let cands = pool.filter(m => Math.abs(m - leadPitch) <= 5 && m !== leadPitch);
+        if (strong) { const ct = cands.filter(m => B.tones.includes(m % 12)); if (ct.length) cands = ct; }
+        if (leadPitch > 82) cands = cands.filter(m => m <= leadPitch) .concat([]);
+        if (leadPitch < 67) cands = cands.filter(m => m >= leadPitch);
+        if (!cands.length) cands = pool.filter(m => Math.abs(m - 74) <= 6);
+        leadPitch = cands[Math.floor(Math.random() * cands.length)];
+        notes[s] = [leadPitch, len];
+      });
+      return notes;
+    }
+
+    // Slap bass solo: thumb (T), pop (P) and ghost (G) notes from rhythm templates, mostly A blues pentatonic;
+    // now and then a bebop-style eighth-note run down a scale with chromatic passing tones into the next chord.
+    const BLUES = [9, 0, 2, 3, 4, 7];
+    const BEBOP = [9, 11, 0, 2, 4, 5, 7, 8];
+    const SLAPS = [
+      'T-GTP-GTT-GPT-PG',
+      'T--PG-T-TGP-TGPP',
+      'T-TPG-PTT--PGTP-',
+      'TG-P-GTPT-GPG-TP',
+      'T--GP-TGT-P-GTPG',
+      'T-GPT-P-TGTP-GPP'
+    ];
+    function nearestPc(pc, ref, lo, hi) {
+      let best = null;
+      for (let m = lo; m <= hi; m++) if (m % 12 === pc && (best === null || Math.abs(m - ref) < Math.abs(best - ref))) best = m;
+      return best;
+    }
+    const pickOne = a => a[Math.floor(Math.random() * a.length)];
+    function slapBar(bar, B, NB) {
+      const notes = {};
+      const r = nearestPc(B.root % 12, 45, 40, 52);
+      if ((bar % 8 === 3 || bar % 8 === 7) && Math.random() < 0.6) {
+        // Bebop run: thumb root on 1, then seven eighths stepping down, landing a half step from the next root.
+        notes[0] = ['T', r, 2];
+        let m = nearestPc(pickOne(B.tones), 62, 57, 66);
+        for (let st = 2; st <= 12; st += 2) {
+          notes[st] = ['F', m, 2];
+          do { m--; } while (!BEBOP.includes(m % 12) && !B.tones.includes(m % 12));
+        }
+        const target = nearestPc(NB.root % 12, m, 45, 57);
+        notes[14] = ['F', target + (Math.random() < 0.5 ? 1 : -1), 2];
+        return notes;
+      }
+      const tpl = pickOne(SLAPS);
+      let lastThumb = r;
+      for (let st = 0; st < 16; st++) {
+        const c = tpl[st];
+        if (c === '-') continue;
+        let len = 1;
+        while (st + len < 16 && tpl[st + len] === '-' && len < 3) len++;
+        if (c === 'T') {
+          let m = r;
+          if (st > 0 && Math.random() > 0.55) {
+            const opts = [];
+            for (let x = 40; x <= 52; x++) if (BLUES.includes(x % 12) && Math.abs(x - r) <= 7 && x !== r) opts.push(x);
+            if (opts.length) m = pickOne(opts);
+          }
+          lastThumb = m;
+          notes[st] = ['T', m, len];
+        } else if (c === 'P') {
+          let m = lastThumb + 12;
+          if (Math.random() > 0.55) {
+            const opts = [];
+            for (let x = 52; x <= 64; x++) if (BLUES.includes(x % 12)) opts.push(x);
+            m = pickOne(opts);
+          }
+          notes[st] = ['P', m, len];
+        } else {
+          notes[st] = ['G', lastThumb, 1];
+        }
+      }
+      return notes;
+    }
+    // The solo plays on the same plucked bass as the groove: thumb, pop and run notes differ only in level,
+    // and ghost notes are very short, quiet plucks.
+    function slap(kind, m, t, dur) {
+      if (kind === 'G') { bass(m, t, 0.045, false, 0.35); return; }
+      bass(m, t, Math.max(0.08, dur), false, kind === 'P' ? 1.1 : kind === 'F' ? 0.95 : 1);
+    }
+
+    function schedule(st, t) {
+      // Sections of 8 bars: groove, lead solo, lead solo, bass solo, breakdown.
+      const bar = Math.floor(st / 16), s = st % 16, bi = bar % 8, sec = Math.floor(bar / 8) % 5;
+      const B = BARS[bi], NB = BARS[(bi + 1) % 8];
+      const brk = sec === 4, soloOn = sec === 1 || sec === 2, bassSolo = sec === 3;
+      // Drums
+      if (!brk && (s === 0 || s === 6 || s === 8 || (bar % 2 && s === 11))) kick(t, s === 0 ? 0.9 : 0.75);
+      if (s === 4 || s === 12) snare(t, brk ? 0.5 : 1);
+      if (!brk && bar % 2 && s === 15) snare(t, 0.25);
+      if (s === 14) noiseHit(t, 'highpass', 6500, brk ? 0.06 : 0.12, 0.16);
+      else if (s !== 15) noiseHit(t, 'highpass', 7000, (s % 2 ? 0.06 : 0.13) * (brk ? 0.5 : 1), 0.035);
+      // Octave bass, anticipating the next chord on the last eighth
+      if (!bassSolo && s in BASS) bass((s >= 14 ? NB.root : B.root) + BASS[s], t, S16 * (s === 14 ? 1.8 : 0.85));
+      if (s === 0) slapNotes = bassSolo ? slapBar(bar, B, NB) : {};
+      if (slapNotes[s]) slap(slapNotes[s][0], slapNotes[s][1], t, slapNotes[s][2] * S16 * 0.95);
+      // Pads
+      if (s === 0) pad(B.pad, t, S16 * 16, brk ? 0.075 : bassSolo ? 0.035 : 0.05);
+      // Solo
+      if (s === 0 && soloOn && bar % 8 === 0) { soloNum++; setLeadTimbre(LEADS[(soloNum - 1) % LEADS.length]); }
+      if (s === 0) barNotes = soloOn ? phrase(bar, B) : {};
+      if (barNotes[s]) lead(barNotes[s][0], t, barNotes[s][1] * S16);
+    }
+
+    function tick() {
+      while (nextTime < ac.currentTime + 0.15) {
+        schedule(step, nextTime);
+        nextTime += S16 * (step % 2 ? 1 - SWING : 1 + SWING);
+        step++;
+      }
+    }
+    function start() {
+      if (playing || !audio()) return;
+      if (!master) build();
+      if (!leadOsc) buildLead();
+      playing = true;
+      master.gain.cancelScheduledValues(ac.currentTime);
+      master.gain.setTargetAtTime(0.32, ac.currentTime, 0.05);
+      nextTime = ac.currentTime + 0.1;
+      step = Math.floor(step / 16) * 16;
+      tick();
+      timer = setInterval(tick, 25);
+    }
+    function stop() {
+      if (!playing) return;
+      playing = false;
+      clearInterval(timer); timer = null;
+      master.gain.cancelScheduledValues(ac.currentTime);
+      master.gain.setTargetAtTime(0, ac.currentTime, 0.05);
+      leadGain.gain.cancelScheduledValues(ac.currentTime);
+      leadGain.gain.setTargetAtTime(0, ac.currentTime, 0.02);
+    }
+    return { start, stop, get playing() { return playing; } };
+  })();
+  const musicBox = document.getElementById('music');
+  try { musicBox.checked = localStorage.getItem('slide4-music') === '1'; } catch (e) {}
+  musicBox.addEventListener('change', () => {
+    try { localStorage.setItem('slide4-music', musicBox.checked ? '1' : '0'); } catch (e) {}
+    try { musicBox.checked ? music.start() : music.stop(); } catch (err) { console.warn(err); }
+  });
+  function wantMusic() { if (musicBox.checked && !music.playing && !document.hidden) { try { music.start(); } catch (err) { console.warn(err); } } }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (music.playing) music.stop(); } else if (musicBox.checked && ac) wantMusic();
+  });
+  function playScore(big) {
+    if (!soundBox.checked || !audio()) return;
+    const t = ac.currentTime + 0.01;
+    if (!big) {
+      // Line of 4: a bright two-note chime.
+      note(784, t, 0.22, 'triangle', 0.22);
+      note(1175, t + 0.08, 0.32, 'triangle', 0.2);
+    } else {
+      // Line of 5 or a cross: rising arpeggio with a sparkle on top.
+      [523, 659, 784, 1047].forEach((f, i) => note(f, t + i * 0.07, 0.3, 'square', 0.07));
+      note(1568, t + 0.3, 0.55, 'triangle', 0.2);
+      note(2093, t + 0.36, 0.5, 'sine', 0.12);
+    }
+  }
+  const sel = document.getElementById('colors');
+  const elScore = document.getElementById('score');
+  const elMoves = document.getElementById('moves');
+  const elRatio = document.getElementById('ratio');
+  const elRatioK = document.getElementById('ratiok');
+  const modeSel = document.getElementById('mode');
+  const timebar = document.getElementById('timebar');
+  const tbFill = document.getElementById('tbfill');
+  const tbSec = document.getElementById('tbsec');
+  const tbColors = document.getElementById('tbcolors');
+  const tbBonus = document.getElementById('tbbonus');
+  const bannerEl = document.getElementById('banner');
+  const overEl = document.getElementById('over');
+  const overText = document.getElementById('overtext');
+  const fmt = p => (p * 1000).toLocaleString('en-US');
+
+  // Timed mode
+  const T_MAX = 60, LEVEL_EVERY = 120, BESTKEY = 'slide4-best-timed';
+  let mode = 'free', timeLeft = T_MAX, elapsed = 0, clockOn = false, over = false, lastFrame = 0;
+  let best = 0, bestAtStart = 0, bestCalled = false;
+  try { best = parseInt(localStorage.getItem(BESTKEY) || '0', 10) || 0; } catch (e) {}
+  try { const m = localStorage.getItem('slide4-mode'); if (m) modeSel.value = m; } catch (e) {}
+
+  // Voices: SAM, the C64's 1982 speech synthesiser (rendered in the page), or one of the device's own voices.
+  document.getElementById('voiceslot').appendChild(document.getElementById('voicepick'));
+  const voiceSel = document.getElementById('voice');
+  // Full screen where the browser allows it (hidden where it doesn't).
+  const fsBtn = document.getElementById('fs');
+  const fsEl = document.documentElement;
+  if (document.fullscreenEnabled && fsEl.requestFullscreen) {
+    fsBtn.hidden = false;
+    fsBtn.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else fsEl.requestFullscreen({ navigationUI: 'hide' }).catch(() => { fsBtn.hidden = true; });
+    });
+    document.addEventListener('fullscreenchange', () => {
+      fsBtn.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+      document.body.classList.toggle('fs', !!document.fullscreenElement);
+    });
+  }
+  const SAMV = { 'sam-deep': { pitch: 110, speed: 82, mouth: 105, throat: 110 }, 'sam': { pitch: 64, speed: 72, mouth: 128, throat: 128 } };
+  let deviceVoices = [];
+  function listVoices() {
+    try {
+      deviceVoices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+    } catch (e) { deviceVoices = []; }
+    const keep = voiceSel.value;
+    voiceSel.querySelectorAll('option[data-dev]').forEach(o => o.remove());
+    deviceVoices.forEach((v, i) => {
+      const o = document.createElement('option');
+      o.value = 'dev:' + v.name; o.dataset.dev = '1'; o.textContent = 'Device: ' + v.name;
+      voiceSel.insertBefore(o, voiceSel.querySelector('option[value="off"]'));
+    });
+    let saved = null;
+    try { saved = localStorage.getItem('slide4-voice'); } catch (e) {}
+    voiceSel.value = saved || keep || 'sam-deep';
+    if (voiceSel.selectedIndex < 0) voiceSel.value = 'sam-deep';
+  }
+  listVoices();
+  try { speechSynthesis.onvoiceschanged = listVoices; } catch (e) {}
+  voiceSel.addEventListener('change', () => {
+    try { localStorage.setItem('slide4-voice', voiceSel.value); } catch (e) {}
+    say('seven colors', true);
+  });
+  const testBtn = document.getElementById('voicetest');
+  testBtn.addEventListener('click', () => {
+    unlockSpeech(); audio();
+    const [text, phon] = TESTS[testIdx];
+    say(text, true, phon);
+    testBtn.title = 'Played: ' + text;
+    testIdx = (testIdx + 1) % TESTS.length;
+  });
+  let speechUnlocked = false;
+  function unlockSpeech() {
+    if (speechUnlocked) return;
+    speechUnlocked = true;
+    try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+  }
+  const samCache = {};
+  const SURVIVE_PHON = 'THRIY KAHLER SERVAY5V';
+  // Test button cycles through every phrase the game says.
+  const TESTS = [['seven colors'], ['three color survive', SURVIVE_PHON], ['high score'], ['game over']];
+  let testIdx = 0;
+  function samSay(text, cfg, phonetic) {
+    if (!window.SamJs || !audio()) return false;
+    const key = JSON.stringify(cfg) + (phonetic ? 'P:' : 'T:') + text;
+    let buf = samCache[key];
+    if (!buf) {
+      const data = new window.SamJs(cfg).buf32(text, !!phonetic);
+      if (!data || !data.length) return false;
+      buf = ac.createBuffer(1, data.length, 22050);
+      buf.getChannelData(0).set(data);
+      samCache[key] = buf;
+    }
+    const src = ac.createBufferSource(), g = ac.createGain();
+    src.buffer = buf; g.gain.value = 0.7;
+    src.connect(g); g.connect(ac.destination);
+    src.start(ac.currentTime + 0.02);
+    return true;
+  }
+  // `phon` is an optional SAM phoneme spelling, for words SAM's English rules get wrong.
+  function say(text, force, phon) {
+    if (!soundBox.checked && !force) return;
+    const v = voiceSel.value;
+    if (v === 'off') return;
+    try {
+      if (SAMV[v]) { if (samSay(phon || text, SAMV[v], !!phon)) return; }
+      const u = new SpeechSynthesisUtterance(text);
+      const dv = v.startsWith('dev:') ? deviceVoices.find(x => x.name === v.slice(4)) : null;
+      if (dv) u.voice = dv;
+      u.pitch = 0.1; u.rate = 0.82; u.volume = 1;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    } catch (e) { console.warn(e); }
+  }
+  let bannerTimer = null;
+  function banner(text) {
+    bannerEl.innerHTML = '<span></span>';
+    bannerEl.firstChild.textContent = text;
+    bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show');
+  }
+  function bonus(sec) {
+    tbBonus.textContent = '+' + sec + ' s';
+    tbBonus.classList.remove('pop'); void tbBonus.offsetWidth; tbBonus.classList.add('pop');
+  }
+  function renderTime() {
+    tbFill.style.width = Math.max(0, timeLeft / T_MAX * 100) + '%';
+    tbSec.textContent = clockOn || elapsed > 0 ? Math.ceil(Math.max(0, timeLeft)) + ' s left' : 'Starts on your first move';
+    const nextIn = LEVEL_EVERY - (elapsed % LEVEL_EVERY);
+    tbColors.textContent = nColors + ' colors' + (nColors < 10 && elapsed > 0 ? ' · next in ' + Math.ceil(nextIn) + ' s' : '');
+    timebar.classList.toggle('low', clockOn && timeLeft <= 10);
+  }
+  // Per-game record for the opt-in stats.
+  let gs = null;
+  function freshStats() {
+    return { l3: 0, l4: 0, l5: 0, cross: 0, bonusNominal: 0, bonusGained: 0, surv: 0, ev: [], tl: [] };
+  }
+  gs = freshStats();
+  function frame(now) {
+    if (!clockOn || over) return;
+    let dt = (now - lastFrame) / 1000;
+    lastFrame = now;
+    if (dt > 0.25) dt = 0; // tab was hidden: the clock pauses
+    timeLeft -= dt; elapsed += dt;
+    if (gs && Math.floor(elapsed / 10) >= gs.tl.length) gs.tl.push(Math.max(0, Math.round(timeLeft)));
+    const want = Math.min(10, 6 + Math.floor(elapsed / LEVEL_EVERY));
+    if (want > nColors) {
+      nColors = want; sel.value = String(nColors);
+      banner(nColors + ' colors');
+      // Spoken as words: SAM reads digits one by one ("one zero").
+      say((['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][nColors] || String(nColors)) + ' colors');
+    }
+    if (timeLeft <= 0) { timeLeft = 0; renderTime(); gameOver(); return; }
+    renderTime();
+    requestAnimationFrame(frame);
+  }
+  function startClock() {
+    if (clockOn || over) return;
+    clockOn = true;
+    lastFrame = performance.now();
+    requestAnimationFrame(frame);
+  }
+  // ---- Permanent high scores: kept in your Claude account (private to you), mirrored on this device ----
+  const SCOREKEY = 'slide4-scores';
+  let scores = { timed: [] }, scoreRef = null, scoreWrite = Promise.resolve(), scoreStore = 'device';
+  function cleanList(list) {
+    const seen = new Set(), out = [];
+    (list || []).forEach(e => {
+      if (!e || typeof e.s !== 'number' || e.s <= 0) return;
+      const k = e.s + '|' + (e.t || 0);
+      if (!seen.has(k)) { seen.add(k); out.push({ s: e.s, t: e.t || 0, c: e.c || 0, n: typeof e.n === 'string' ? e.n.slice(0, 3) : '' }); }
+    });
+    return out.sort((a, b) => b.s - a.s || a.t - b.t).slice(0, 10);
+  }
+  try { const v = JSON.parse(localStorage.getItem(SCOREKEY) || 'null'); if (v && Array.isArray(v.timed)) scores.timed = cleanList(v.timed); } catch (e) {}
+  if (!scores.timed.length && best > 0) scores.timed = [{ s: best, t: 0, c: 0 }]; // carry over the old single best
+  best = Math.max(best, scores.timed[0] ? scores.timed[0].s : 0);
+  function saveScoresLocal() { try { localStorage.setItem(SCOREKEY, JSON.stringify(scores)); } catch (e) {} }
+  function saveScoresRemote() {
+    if (!scoreRef) return;
+    const body = { timed: scores.timed };
+    scoreWrite = scoreWrite.then(() => scoreRef.set(body)).catch(err => { console.warn('score save', err); });
+  }
+  // Returns the entry's place (0-based), or -1 if it didn't make the list.
+  function addTimedScore(sc, colorsReached) {
+    if (sc <= 0) return { rank: -1 };
+    const t = Date.now();
+    scores.timed = cleanList(scores.timed.concat([{ s: sc, t, c: colorsReached, n: '' }]));
+    saveScoresLocal(); saveScoresRemote(); renderScores();
+    return { rank: scores.timed.findIndex(e => e.t === t && e.s === sc), t, s: sc };
+  }
+  function setInitials(t, sc, n) {
+    const e = scores.timed.find(x => x.t === t && x.s === sc);
+    if (!e) return;
+    e.n = n;
+    saveScoresLocal(); saveScoresRemote(); renderScores();
+  }
+
+  // ---- Arcade-style initials entry ----
+  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const iniEl = document.getElementById('initials'), wheelsEl = document.getElementById('wheels');
+  const overBtns = document.getElementById('overbtns');
+  let ini = ['A', 'A', 'A'], iniCur = 0, iniFor = null;
+  try { const v = localStorage.getItem('slide4-initials'); if (v && /^[A-Z]{3}$/.test(v)) ini = v.split(''); } catch (e) {}
+  const wheelEls = [0, 1, 2].map(k => {
+    const w = document.createElement('div'); w.className = 'wheel';
+    w.innerHTML = '<button type="button" aria-label="Next letter">▲</button><div class="ch"></div><button type="button" aria-label="Previous letter">▼</button>';
+    const step = d => { iniCur = k; const i = LETTERS.indexOf(ini[k]); ini[k] = LETTERS[(i + d + 26) % 26]; renderIni(); };
+    w.children[0].addEventListener('click', () => step(1));
+    w.children[2].addEventListener('click', () => step(-1));
+    w.children[1].addEventListener('click', () => { iniCur = k; renderIni(); });
+    wheelsEl.appendChild(w);
+    return w;
+  });
+  function renderIni() { wheelEls.forEach((w, k) => { w.children[1].textContent = ini[k]; w.classList.toggle('cur', k === iniCur); }); }
+  function askInitials(entry) {
+    iniFor = entry; iniCur = 0; renderIni();
+    iniEl.hidden = false; overBtns.hidden = true;
+  }
+  function finishInitials() {
+    if (!iniFor) return;
+    const n = ini.join('');
+    try { localStorage.setItem('slide4-initials', n); } catch (e) {}
+    setInitials(iniFor.t, iniFor.s, n);
+    iniFor = null; iniEl.hidden = true; overBtns.hidden = false;
+    sendStats();
+  }
+  document.getElementById('initok').addEventListener('click', finishInitials);
+  document.addEventListener('keydown', (e) => {
+    if (!iniFor || iniEl.hidden) return;
+    const k = e.key.toUpperCase();
+    if (/^[A-Z]$/.test(k)) { ini[iniCur] = k; iniCur = Math.min(2, iniCur + 1); renderIni(); e.preventDefault(); }
+    else if (e.key === 'Enter') { finishInitials(); e.preventDefault(); }
+    else if (e.key === 'Backspace') { iniCur = Math.max(0, iniCur - 1); renderIni(); e.preventDefault(); }
+  });
+  (async () => {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      if (!db || !user) return;
+      const uid = await user.id();
+      if (!uid) return;
+      scoreRef = db.doc('data/users/' + uid + '/scores');
+      const snap = await scoreRef.get();
+      const remote = snap.exists ? cleanList((snap.data() || {}).timed) : [];
+      const merged = cleanList(remote.concat(scores.timed));
+      scoreStore = 'account';
+      const changed = JSON.stringify(merged) !== JSON.stringify(remote);
+      scores.timed = merged;
+      best = Math.max(best, merged[0] ? merged[0].s : 0);
+      saveScoresLocal();
+      if (changed) saveScoresRemote();
+      renderScores(); renderStats();
+    } catch (err) { console.warn('score store unavailable', err); }
+  })();
+
+  // ---- Opt-in game stats, shared with the game's owner ----
+  const shareBox = document.getElementById('sp-share'), shareState = document.getElementById('sp-sharestate');
+  const statCopy = document.getElementById('statcopy'), statCopyText = document.getElementById('statcopytext');
+  let playerKey = '';
+  try {
+    shareBox.checked = localStorage.getItem('slide4-share') === '1';
+    playerKey = localStorage.getItem('slide4-player') || '';
+    if (!playerKey) { playerKey = 'p' + Math.random().toString(36).slice(2, 10); localStorage.setItem('slide4-player', playerKey); }
+  } catch (e) { playerKey = 'p' + Math.random().toString(36).slice(2, 10); }
+  let statsDb = null, statsCanWrite = null, viewerIsOwner = false;
+  function renderShareState() {
+    if (!shareBox.checked) { shareState.textContent = ''; return; }
+    shareState.textContent = statsDb && statsCanWrite !== false
+      ? 'Thanks! Your finished timed games will be sent automatically.'
+      : "Thanks! Your access to this page can't send stats directly, so after each timed game you'll get a Copy stats button instead.";
+  }
+  shareBox.addEventListener('change', () => {
+    try { localStorage.setItem('slide4-share', shareBox.checked ? '1' : '0'); } catch (e) {}
+    renderShareState();
+  });
+  renderShareState();
+  (async () => {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+      statsDb = db;
+      if (user) { viewerIsOwner = await user.isOwner(); statsCanWrite = await user.can('data.write'); }
+      renderShareState();
+    } catch (e) {}
+  })();
+  function statRecord() {
+    return {
+      v: 1, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
+      score: score * 1000, moves, seconds: Math.round(elapsed), colors: nColors,
+      lines3: gs.l3, lines4: gs.l4, lines5: gs.l5, crosses: gs.cross, survivals: gs.surv,
+      bonusSeconds: gs.bonusNominal, bonusSecondsUsed: Math.round(gs.bonusGained),
+      events: gs.ev, timeLeftEvery10s: gs.tl,
+      screen: Math.round(Math.min(window.innerWidth, window.innerHeight))
+    };
+  }
+  function showCopy(rec) {
+    statCopyText.value = JSON.stringify(rec);
+    statCopy.hidden = false;
+  }
+  document.getElementById('statcopybtn').addEventListener('click', () => {
+    const txt = statCopyText.value, btn = document.getElementById('statcopybtn');
+    const done = () => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy stats'; }, 1500); };
+    try {
+      navigator.clipboard.writeText(txt).then(done, () => { statCopyText.focus(); statCopyText.select(); });
+    } catch (e) { statCopyText.focus(); statCopyText.select(); }
+  });
+  function sendStats() {
+    if (!shareBox.checked || mode !== 'timed' || moves === 0 || !gs) return;
+    const rec = statRecord();
+    if (!statsDb || statsCanWrite === false) { showCopy(rec); return; }
+    statsDb.collection('games').add(rec).catch(err => { console.warn('stats', err); showCopy(rec); });
+  }
+
+  function gameOver() {
+    over = true; clockOn = false;
+    const newBest = score > bestAtStart && score > 0;
+    if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
+    const placed = mode === 'timed' ? addTimedScore(score, nColors) : { rank: -1 };
+    overText.innerHTML = 'Score <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? 'New high score!' : 'High score ' + fmt(best));
+    iniEl.hidden = true; overBtns.hidden = false;
+    statCopy.hidden = true;
+    if (placed.rank >= 0 && placed.rank < 5) askInitials(placed); else sendStats();
+    overEl.hidden = false;
+    renderStats();
+    say('game over');
+  }
+  function checkBest() {
+    if (mode !== 'timed') return;
+    if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
+    if (!bestCalled && bestAtStart > 0 && score > bestAtStart) {
+      bestCalled = true;
+      setTimeout(() => { banner('High score'); say('high score'); }, 450);
+    }
+  }
+  const logBody = document.getElementById('logbody');
+  const LOGKEY = 'slide4-totals';
+
+  let survive = false; // no colour has 4 tiles: lines of 3 count
+  const minLen = () => survive ? 3 : 4;
+  let nColors = 7, grid = [], hole = N * N - 1, score = 0, moves = 0, busy = false, nextId = 1;
+  let totals = {};
+  try { totals = JSON.parse(localStorage.getItem(LOGKEY) || '{}') || {}; } catch (e) { totals = {}; }
+
+  // Static wells
+  for (let i = 0; i < N * N; i++) {
+    const s = document.createElement('div');
+    s.className = 'slot';
+    s.style.transform = pos(i);
+    s.innerHTML = '<i></i>';
+    board.appendChild(s);
+  }
+
+  function pos(i) { return 'translate(' + (i % N) * 100 + '%,' + Math.floor(i / N) * 100 + '%)'; }
+  function rand(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function colorsOf() { return grid.map(t => t ? t.color : null); }
+
+  // Would placing `color` at idx form a line (4+, or 3+ while surviving) in its row or column?
+  function makesLine(cols, idx, color) {
+    const r = Math.floor(idx / N), c = idx % N;
+    let h = 1;
+    for (let x = c - 1; x >= 0 && cols[r * N + x] === color; x--) h++;
+    for (let x = c + 1; x < N && cols[r * N + x] === color; x++) h++;
+    if (h >= minLen()) return true;
+    let v = 1;
+    for (let y = r - 1; y >= 0 && cols[y * N + c] === color; y--) v++;
+    for (let y = r + 1; y < N && cols[y * N + c] === color; y++) v++;
+    return v >= minLen();
+  }
+
+  function findLines(cols) {
+    const lines = [];
+    const scan = (idxs) => {
+      let start = 0;
+      for (let k = 1; k <= idxs.length; k++) {
+        if (k === idxs.length || cols[idxs[k]] === null || cols[idxs[k]] !== cols[idxs[start]]) {
+          if (cols[idxs[start]] !== null && k - start >= minLen()) lines.push(idxs.slice(start, k));
+          start = k;
+        }
+      }
+    };
+    for (let r = 0; r < N; r++) scan([...Array(N)].map((_, c) => r * N + c));
+    for (let c = 0; c < N; c++) scan([...Array(N)].map((_, r) => r * N + c));
+    return lines;
+  }
+
+  // Assign colours to the given cells so the board has no lines; prefer a colour different from the old one.
+  function recolor(cols, cells, old) {
+    for (const i of shuffle(cells.slice())) {
+      const ok = [];
+      for (let k = 0; k < nColors; k++) if (!makesLine(cols, i, k)) ok.push(k);
+      const fresh = ok.filter(k => old === undefined || k !== old[i]);
+      cols[i] = rand(fresh.length ? fresh : ok);
+    }
+    return cols;
+  }
+
+  function makeTile(color) {
+    const el = document.createElement('div');
+    el.className = 'tile';
+    const b = document.createElement('b');
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd"/></svg>';
+    el.appendChild(b);
+    const t = { id: nextId++, color, el, b };
+    el.dataset.id = t.id;
+    paint(t);
+    board.appendChild(el);
+    return t;
+  }
+  function paint(t) {
+    const s = SYMBOLS[t.color];
+    t.b.style.setProperty('--c', PALETTE[t.color]);
+    if (s.ink) t.b.style.setProperty('--ink', s.ink); else t.b.style.removeProperty('--ink');
+    t.b.querySelector('path').setAttribute('d', s.d);
+  }
+
+  function build(cols, h) {
+    board.querySelectorAll('.tile').forEach(e => e.remove());
+    hole = h;
+    grid = cols.map((c, i) => {
+      if (i === h || c === null) return null;
+      const t = makeTile(c);
+      t.el.style.transform = pos(i);
+      return t;
+    });
+    markMovable();
+  }
+
+  function newGame() {
+    mode = modeSel.value;
+    try { localStorage.setItem('slide4-mode', mode); } catch (e) {}
+    over = false; clockOn = false; overEl.hidden = true;
+    iniFor = null; iniEl.hidden = true; overBtns.hidden = false;
+    gs = freshStats(); statCopy.hidden = true;
+    survive = false; trayEl.classList.remove('survive');
+    if (mode === 'timed') {
+      sel.value = '6'; sel.disabled = true;
+      timeLeft = T_MAX; elapsed = 0; bestAtStart = best; bestCalled = false;
+      timebar.hidden = false;
+    } else {
+      sel.disabled = false;
+      timebar.hidden = true;
+    }
+    nColors = parseInt(sel.value, 10);
+    const cols = Array(N * N).fill(null);
+    const h = N * N - 1;
+    recolor(cols, [...Array(N * N).keys()].filter(i => i !== h));
+    score = 0; moves = 0; busy = false;
+    build(cols, h);
+    checkSurvive(true);
+    renderStats();
+    renderLog();
+    if (mode === 'timed') renderTime();
+  }
+
+  const trayEl = document.querySelector('.tray');
+  function checkSurvive(quiet) {
+    const counts = Array(PALETTE.length).fill(0);
+    grid.forEach(t => { if (t) counts[t.color]++; });
+    const now = !counts.some(c => c >= 4);
+    if (now === survive) return;
+    survive = now;
+    trayEl.classList.toggle('survive', now);
+    if (now && !quiet && gs) gs.surv++;
+    if (now && !quiet) { banner('3 color survive'); say('three color survive', false, SURVIVE_PHON); }
+  }
+
+  function adjacent(a, b) {
+    const ar = Math.floor(a / N), ac = a % N, br = Math.floor(b / N), bc = b % N;
+    return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
+  }
+
+  function markMovable() {
+    grid.forEach((t, i) => { if (t) t.el.classList.toggle('can', adjacent(i, hole)); });
+  }
+
+  function move(idx) {
+    if (busy || over || !grid[idx] || !adjacent(idx, hole)) return;
+    busy = true;
+    if (mode === 'timed') startClock();
+    const t = grid[idx], dest = hole;
+    grid[hole] = t; grid[idx] = null;
+    t.el.classList.add('moving');
+    t.el.style.transform = pos(hole);
+    hole = idx;
+    moves++;
+    try { playSlide(); } catch (err) { console.warn(err); }
+    tally(1, 0);
+    markMovable();
+    renderStats();
+    setTimeout(() => { t.el.classList.remove('moving'); resolve(dest); }, 160);
+  }
+
+  function resolve(dest) {
+    const cols = colorsOf();
+    // Only lines through the tile that just moved count.
+    const lines = findLines(cols).filter(l => l.includes(dest));
+    if (!lines.length) { busy = false; return; }
+    // 4 in a line = 1, 5 in a line = 3, 3 in a line (survival only) = 0.5; crossing lines score double their sum.
+    let pts = lines.reduce((s, l) => s + (l.length >= 5 ? 3 : l.length === 4 ? 1 : 0.5), 0);
+    if (lines.length > 1) pts *= 2;
+    try { playScore(lines.length > 1 || lines.some(l => l.length >= 5)); } catch (err) { console.warn(err); }
+    score += pts;
+    tally(0, pts);
+    if (gs) {
+      lines.forEach(l => { if (l.length >= 5) gs.l5++; else if (l.length === 4) gs.l4++; else gs.l3++; });
+      if (lines.length > 1) gs.cross++;
+      // event: [seconds into game, longest line, lines, points (in thousands), moves so far]
+      if (gs.ev.length < 400) gs.ev.push([Math.round(elapsed * 10) / 10, Math.max(...lines.map(l => l.length)), lines.length, pts, moves]);
+    }
+    if (mode === 'timed' && !over) {
+      const add = lines.reduce((s, l) => s + (l.length >= 5 ? 15 : l.length === 4 ? 5 : 3), 0);
+      if (gs) { gs.bonusNominal += add; gs.bonusGained += Math.min(add, T_MAX - timeLeft); }
+      timeLeft = Math.min(T_MAX, timeLeft + add);
+      bonus(add);
+      renderTime();
+    }
+    checkBest();
+    renderStats(true);
+    const cells = [...new Set(lines.flat())];
+    cells.forEach(i => grid[i].el.classList.add('match'));
+    setTimeout(() => {
+      const old = cols.slice();
+      cells.forEach(i => { cols[i] = null; });
+      recolor(cols, cells, old);
+      cells.forEach(i => {
+        const t = grid[i];
+        t.color = cols[i];
+        paint(t);
+        t.el.classList.remove('match');
+        void t.el.offsetWidth;
+        t.el.classList.add('grow');
+      });
+      checkSurvive();
+      setTimeout(() => { cells.forEach(i => grid[i] && grid[i].el.classList.remove('grow')); busy = false; }, 230);
+    }, 330);
+  }
+
+  function renderStats(bumpScore) {
+    elScore.textContent = fmt(score);
+    elMoves.textContent = moves;
+    if (mode === 'timed') {
+      elRatioK.textContent = 'High score';
+      elRatio.textContent = fmt(Math.max(best, score));
+    } else {
+      elRatioK.textContent = 'Moves / 1000';
+      elRatio.textContent = score ? (moves / score).toFixed(1) : '–';
+    }
+    if (bumpScore) { elScore.classList.remove('bump'); void elScore.offsetWidth; elScore.classList.add('bump'); }
+  }
+
+  function tally(m, p) {
+    const k = String(nColors);
+    totals[k] = totals[k] || { moves: 0, points: 0 };
+    totals[k].moves += m; totals[k].points += p;
+    try { localStorage.setItem(LOGKEY, JSON.stringify(totals)); } catch (e) {}
+    if (p) renderLog();
+  }
+
+  function renderLog() {
+    const keys = Object.keys(totals).filter(k => totals[k].moves > 0).sort((a, b) => a - b);
+    if (!keys.length) { logBody.innerHTML = '<p class="empty">Play a few games at different colour counts and the totals collect here, so you can compare how many moves each 1,000 points cost.</p>'; return; }
+    let h = '<table><thead><tr><th>Colours</th><th>Points</th><th>Moves</th><th>Moves / 1000</th></tr></thead><tbody>';
+    keys.forEach(k => {
+      const t = totals[k];
+      h += '<tr' + (k === String(nColors) ? ' class="cur"' : '') + '><td>' + k + '</td><td>' + fmt(t.points) + '</td><td>' + t.moves + '</td><td>' + (t.points ? (t.moves / t.points).toFixed(1) : '–') + '</td></tr>';
+    });
+    logBody.innerHTML = h + '</tbody></table>';
+  }
+
+  document.querySelector('.tray').addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  board.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('.tile');
+    if (!el) return;
+    e.preventDefault();
+    if (soundBox.checked) audio();
+    unlockSpeech();
+    wantMusic();
+    const idx = grid.findIndex(t => t && t.id === +el.dataset.id);
+    if (idx >= 0) move(idx);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'SELECT') return;
+    const r = Math.floor(hole / N), c = hole % N;
+    const map = { ArrowUp: [r + 1, c], ArrowDown: [r - 1, c], ArrowLeft: [r, c + 1], ArrowRight: [r, c - 1] };
+    const d = map[e.key];
+    if (!d || !document.getElementById('splash').hidden) return;
+    wantMusic();
+    unlockSpeech();
+    e.preventDefault();
+    if (d[0] >= 0 && d[0] < N && d[1] >= 0 && d[1] < N) move(d[0] * N + d[1]);
+  });
+
+  sel.addEventListener('change', newGame);
+  modeSel.addEventListener('change', newGame);
+  document.getElementById('again').addEventListener('click', () => { unlockSpeech(); newGame(); });
+  document.getElementById('newgame').addEventListener('click', newGame);
+  document.getElementById('resetlog').addEventListener('click', () => {
+    totals = {};
+    try { localStorage.removeItem(LOGKEY); } catch (e) {}
+    renderLog();
+  });
+
+  // ---- Splash screen ----
+  const splash = document.getElementById('splash');
+  const spFree = document.getElementById('sp-free'), spTimed = document.getElementById('sp-timed');
+  const spNote = document.getElementById('sp-modenote'), spResume = document.getElementById('sp-resume');
+  const testBox = document.getElementById('sp-testmode');
+  const hsList = document.getElementById('hslist'), hsNote = document.getElementById('hsnote');
+  let spMode = 'timed';
+  try { spMode = localStorage.getItem('slide4-mode') === 'free' ? 'free' : 'timed'; } catch (e) {}
+  try { testBox.checked = localStorage.getItem('slide4-test') === '1'; } catch (e) {}
+  function applyTest() { document.body.classList.toggle('test', testBox.checked); }
+  applyTest();
+  testBox.addEventListener('change', () => {
+    applyTest();
+    try { localStorage.setItem('slide4-test', testBox.checked ? '1' : '0'); } catch (e) {}
+  });
+  function setSpMode(m) {
+    spMode = m;
+    spFree.setAttribute('aria-pressed', String(m === 'free'));
+    spTimed.setAttribute('aria-pressed', String(m === 'timed'));
+    spNote.textContent = m === 'timed'
+      ? 'One minute on the clock. Lines add time, and a colour joins every two minutes.'
+      : 'No clock. Play at your own pace with ' + (testBox.checked ? sel.value : 7) + ' colours.';
+  }
+  spFree.addEventListener('click', () => setSpMode('free'));
+  spTimed.addEventListener('click', () => setSpMode('timed'));
+  testBox.addEventListener('change', () => setSpMode(spMode));
+  const fmtDate = t => { try { return t ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; } catch (e) { return ''; } };
+  function renderScores() {
+    hsList.innerHTML = '';
+    const top = scores.timed.slice(0, 5);
+    if (!top.length) {
+      const li = document.createElement('li'); li.className = 'empty';
+      li.textContent = 'No timed games yet. Your five best scores will show here.';
+      hsList.appendChild(li);
+    }
+    top.forEach((e, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="r"></span><span class="n"></span><span class="s"></span><span class="c"></span><span class="d"></span>';
+      li.children[0].textContent = (i + 1) + '.';
+      li.children[1].textContent = e.n || '···';
+      li.children[2].textContent = fmt(e.s);
+      li.children[3].textContent = e.c ? e.c + ' colours' : '';
+      li.children[4].textContent = fmtDate(e.t);
+      hsList.appendChild(li);
+    });
+    hsNote.textContent = scoreStore === 'account' ? 'Saved to your Claude account, so they stay when the game updates.' : 'Saved on this device.';
+  }
+  function showSplash() {
+    if (clockOn) { clockOn = false; } // pause the timed clock while the menu is open
+    setSpMode(moves > 0 && !over ? mode : spMode);
+    spResume.hidden = !(moves > 0 && !over);
+    renderScores();
+    splash.hidden = false;
+    demoStart();
+  }
+  function hideSplash() { splash.hidden = true; demoStop(); }
+  document.getElementById('sp-play').addEventListener('click', () => {
+    unlockSpeech(); if (soundBox.checked) audio(); wantMusic();
+    modeSel.value = spMode;
+    if (!testBox.checked && spMode === 'free') sel.value = '7';
+    newGame();
+    hideSplash();
+  });
+  spResume.addEventListener('click', () => {
+    unlockSpeech(); if (soundBox.checked) audio(); wantMusic();
+    hideSplash();
+    if (mode === 'timed' && elapsed > 0 && !over) startClock();
+  });
+  document.getElementById('menu').addEventListener('click', showSplash);
+  document.getElementById('overmenu').addEventListener('click', showSplash);
+
+  // ---- Animated demo on the splash: a red tile slides up and completes a row of four ----
+  const demo = document.getElementById('demo'), demoCap = document.getElementById('democap');
+  const DEMO_START = [1,2,3,4,5, 3,4,1,6,2, 0,0,0,null,3, 2,6,4,0,1, 4,1,2,5,6];
+  const DEMO_NEW = [5, 3, 6, 2];
+  const demoTiles = [];
+  for (let i = 0; i < N * N; i++) {
+    const sl = document.createElement('div'); sl.className = 'slot'; sl.style.transform = pos(i); sl.innerHTML = '<i></i>'; demo.appendChild(sl);
+  }
+  for (let i = 0; i < N * N; i++) {
+    if (DEMO_START[i] === null) continue;
+    const el = document.createElement('div'); el.className = 'tile';
+    const b = document.createElement('b'); el.appendChild(b); demo.appendChild(el);
+    demoTiles.push({ home: i, el, b });
+  }
+  const tapEl = document.createElement('div'); tapEl.className = 'tap'; tapEl.style.transform = pos(18); demo.appendChild(tapEl);
+  const plusEl = document.createElement('div'); plusEl.className = 'plus'; plusEl.innerHTML = '<span>+1,000</span>'; demo.appendChild(plusEl);
+  let demoTimers = [];
+  const later = (ms, fn) => demoTimers.push(setTimeout(fn, ms));
+  function demoReset() {
+    demoTiles.forEach(t => {
+      t.el.classList.remove('match', 'grow');
+      t.el.style.transition = 'none';
+      t.el.style.transform = pos(t.home);
+      t.b.style.setProperty('--c', PALETTE[DEMO_START[t.home]]);
+      void t.el.offsetWidth; t.el.style.transition = '';
+    });
+    tapEl.classList.remove('show'); plusEl.classList.remove('show');
+  }
+  function demoRun() {
+    demoReset();
+    demoCap.textContent = 'Tap a tile next to the gap';
+    const mover = demoTiles.find(t => t.home === 18);
+    later(900, () => { tapEl.classList.remove('show'); void tapEl.offsetWidth; tapEl.classList.add('show'); });
+    later(1250, () => { mover.el.style.transform = pos(13); demoCap.textContent = 'It slides in'; });
+    later(1750, () => {
+      demoCap.textContent = 'Four in a row scores';
+      [10, 11, 12].map(h => demoTiles.find(t => t.home === h)).concat([mover]).forEach(t => t.el.classList.add('match'));
+      plusEl.classList.remove('show'); void plusEl.offsetWidth; plusEl.classList.add('show');
+    });
+    later(2100, () => {
+      const row = [10, 11, 12].map(h => demoTiles.find(t => t.home === h)).concat([mover]);
+      row.forEach((t, k) => { t.b.style.setProperty('--c', PALETTE[DEMO_NEW[k]]); t.el.classList.remove('match'); void t.el.offsetWidth; t.el.classList.add('grow'); });
+      demoCap.textContent = 'and the tiles get new colours';
+    });
+    later(4300, demoRun);
+  }
+  function demoStart() { demoStop(); demoRun(); }
+  function demoStop() { demoTimers.forEach(clearTimeout); demoTimers = []; }
+
+  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over }));
+
+  function start(data) {
+    if (data && data.cols && data.cols.length === N * N && !data.over) {
+      mode = data.mode || 'free'; modeSel.value = mode;
+      nColors = data.nColors; sel.value = String(nColors); sel.disabled = mode === 'timed';
+      score = data.score || 0; moves = data.moves || 0;
+      timeLeft = data.timeLeft ?? T_MAX; elapsed = data.elapsed || 0; bestAtStart = best;
+      timebar.hidden = mode !== 'timed';
+      build(data.cols, data.hole);
+      checkSurvive(true);
+      renderStats(); renderLog();
+      if (mode === 'timed') renderTime();
+      setSpMode(mode); hideSplash();
+    } else {
+      modeSel.value = spMode;
+      newGame();
+      showSplash();
+    }
+  }
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+<script>
+// Offline support and home-screen install
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>
