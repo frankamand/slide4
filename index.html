@@ -1175,9 +1175,7 @@ tr.cur td { font-weight: 700; }
   let statsDb = null, statsCanWrite = null, viewerIsOwner = false;
   function renderShareState() {
     if (!shareBox.checked) { shareState.textContent = ''; return; }
-    shareState.textContent = statsDb && statsCanWrite !== false
-      ? 'Thanks! Your finished timed games will be sent automatically.'
-      : "Thanks! Your access to this page can't send stats directly, so after each timed game you'll get a Copy stats button instead.";
+    shareState.textContent = 'Thanks! Your finished timed games will be sent automatically. If sending ever fails, you get a Copy stats button instead.';
   }
   shareBox.addEventListener('change', () => {
     try { localStorage.setItem('slide4-share', shareBox.checked ? '1' : '0'); } catch (e) {}
@@ -1214,11 +1212,22 @@ tr.cur td { font-weight: 700; }
       navigator.clipboard.writeText(txt).then(done, () => { statCopyText.focus(); statCopyText.select(); });
     } catch (e) { statCopyText.focus(); statCopyText.select(); }
   });
+  // Where opted-in stats go: Claude storage when this page can write it, otherwise Frank's Google Form
+  // (one paragraph answer holding the game as JSON). If both fail, the player gets a Copy stats button.
+  const STATS_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSfjp0tfYRY-aHXl0e1rUJkpYziRdXRmBnbfuH4GNIMVrnoefg/formResponse';
+  const STATS_FIELD = 'entry.1095432636';
+  function sendToForm(rec) {
+    const body = new URLSearchParams(); body.set(STATS_FIELD, JSON.stringify(rec));
+    return fetch(STATS_FORM, { method: 'POST', mode: 'no-cors', body });
+  }
   function sendStats() {
     if (!shareBox.checked || mode !== 'timed' || moves === 0 || !gs) return;
     const rec = statRecord();
-    if (!statsDb || statsCanWrite === false) { showCopy(rec); return; }
-    statsDb.collection('games').add(rec).catch(err => { console.warn('stats', err); showCopy(rec); });
+    if (statsDb && statsCanWrite !== false) {
+      statsDb.collection('games').add(rec).catch(() => sendToForm(rec).catch(() => showCopy(rec)));
+      return;
+    }
+    sendToForm(rec).catch(() => showCopy(rec));
   }
 
   function gameOver() {
