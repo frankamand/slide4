@@ -441,7 +441,7 @@ tr.cur td { font-weight: 700; }
 
     <div class="sp-share">
       <label for="sp-share"><input type="checkbox" id="sp-share"> Share my game stats with Frank</label>
-      <p class="sp-note">Helps tune the difficulty. For each timed game you finish it sends your score, moves, game length, colours reached, the lines you made and when, plus your initials and a random player code. Nothing else, and only while this box is ticked.</p>
+      <p class="sp-note">Helps tune the difficulty. For each game you finish (a timed game when the clock runs out, free play when you start a new game) it sends your score, moves, game length, colours reached, the lines you made and when, plus your initials and a random player code. Nothing else, and only while this box is ticked.</p>
       <p class="sp-note" id="sp-sharestate"></p>
     </div>
 
@@ -451,7 +451,7 @@ tr.cur td { font-weight: 700; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v1.2';
+  const APP_VERSION = 'v1.3';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1206,10 +1206,13 @@ tr.cur td { font-weight: 700; }
       renderShareState();
     } catch (e) {}
   })();
-  function statRecord() {
+  // Free play has no clock: count playing time between moves, with long pauses capped at 20 s.
+  let freeSec = 0, lastMoveAt = 0, sessionId = '', freeSent = false;
+  const playSec = () => mode === 'timed' ? elapsed : freeSec;
+  function statRecord(end) {
     return {
-      v: 1, rules: 2, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
-      score: score * 1000, moves, seconds: Math.round(elapsed), colors: nColors,
+      v: 1, rules: 2, mode, end: end || 'over', session: sessionId, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
+      score: score * 1000, moves, seconds: Math.round(playSec()), colors: nColors,
       lines3: gs.l3, lines4: gs.l4, lines5: gs.l5, lines6: gs.l6, level, board: N, crosses: gs.cross, survivals: gs.surv,
       bonusSeconds: gs.bonusNominal, bonusSecondsUsed: Math.round(gs.bonusGained),
       events: gs.ev, timeLeftEvery10s: gs.tl,
@@ -1243,9 +1246,20 @@ tr.cur td { font-weight: 700; }
             () => { st.textContent = 'Could not send (offline, or this page blocks it).'; });
   }
   document.getElementById('formtest').addEventListener('click', sendTestStats);
-  function sendStats() {
-    if (!shareBox.checked || mode !== 'timed' || moves === 0 || !gs) return;
-    const rec = statRecord();
+  // Closing the app mid free-play: a best-effort send that survives the page closing. Marked partial;
+  // if the session continues, the final send has the same session id and replaces it in the analysis.
+  window.addEventListener('pagehide', () => {
+    if (!shareBox.checked || mode !== 'free' || moves < 10 || freeSent || !gs || !navigator.sendBeacon) return;
+    try {
+      const body = new URLSearchParams(); body.set(STATS_FIELD, JSON.stringify(Object.assign(statRecord('close'), { partial: true })));
+      navigator.sendBeacon(STATS_FORM, body);
+    } catch (e) {}
+  });
+  function sendStats(end) {
+    if (!shareBox.checked || moves === 0 || !gs) return;
+    if (mode === 'free' && (moves < 10 || freeSent)) return;
+    if (mode === 'free') freeSent = true;
+    const rec = statRecord(end);
     if (statsDb && statsCanWrite !== false) {
       statsDb.collection('games').add(rec).catch(() => sendToForm(rec).catch(() => showCopy(rec)));
       return;
@@ -1433,11 +1447,13 @@ tr.cur td { font-weight: 700; }
   }
 
   function newGame() {
+    if (mode === 'free' && !over) sendStats('new');   // free play ends when a new game starts
     mode = modeSel.value;
     try { localStorage.setItem('slide4-mode', mode); } catch (e) {}
     over = false; clockOn = false; overEl.hidden = true;
     iniFor = null; iniEl.hidden = true; overBtns.hidden = false;
     gs = freshStats(); statCopy.hidden = true;
+    freeSec = 0; lastMoveAt = 0; freeSent = false; sessionId = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     survive = false; trayEl.classList.remove('survive');
     if (mode === 'timed') {
       sel.value = '6'; sel.disabled = true;
@@ -1496,6 +1512,11 @@ tr.cur td { font-weight: 700; }
     t.el.style.transform = pos(hole);
     hole = idx;
     moves++;
+    if (mode === 'free') {
+      const now = performance.now();
+      if (lastMoveAt) freeSec += Math.min(20, (now - lastMoveAt) / 1000);
+      lastMoveAt = now;
+    }
     try { playSlide(); } catch (err) { console.warn(err); }
     tally(1, 0);
     markMovable();
@@ -1526,7 +1547,7 @@ tr.cur td { font-weight: 700; }
       lines.forEach(l => { if (l.length >= 6) gs.l6++; else if (l.length === 5) gs.l5++; else if (l.length === 4) gs.l4++; else gs.l3++; });
       if (lines.length > 1) gs.cross++;
       // event: [seconds into game, longest line, lines, points (in thousands), moves so far]
-      if (gs.ev.length < 400) gs.ev.push([Math.round(elapsed * 10) / 10, Math.max(...lines.map(l => l.length)), lines.length, pts, moves]);
+      if (gs.ev.length < 400) gs.ev.push([Math.round(playSec() * 10) / 10, Math.max(...lines.map(l => l.length)), lines.length, pts, moves]);
     }
     if (mode === 'timed' && !over) {
       const add = lines.reduce((s, l) => s + (l.length >= 6 ? 25 : l.length === 5 ? 15 : l.length === 4 ? 5 : 3), 0);
