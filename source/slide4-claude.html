@@ -49,6 +49,13 @@ body:not(.test) .testonly { display: none !important; }
 }
 .wheel.cur .ch { border-color: var(--fg); }
 .initials .play { padding: 10px 28px; font-weight: 700; }
+.ver {
+  position: fixed; z-index: 40; pointer-events: none;
+  top: calc(env(safe-area-inset-top, 0px) + 3px); right: max(8px, env(safe-area-inset-right, 0px));
+  font-family: var(--font-num); font-size: 10px; color: var(--muted); letter-spacing: 0.02em;
+}
+.formtest { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.formtest span { font-size: 0.82rem; color: var(--muted); }
 .overbtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 button.ghost { background: transparent; }
 
@@ -366,6 +373,11 @@ tr.cur td { font-weight: 700; }
   <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Every colour above six adds 25%. Instead of a tenth colour, the board grows to 6×6 with eight colours and climbs again to thirteen; the multiplier keeps rising (×3.25 at the top) and a line of six scores 6,000. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
   <p class="hint"><strong>Timed:</strong> you start with 6 colours and a one-minute bar that runs down. A line of 4 adds 5 seconds, a line of 5 adds 15. Every two minutes another colour joins, up to 10. The game ends when the bar runs out.</p>
 
+  <div class="formtest">
+    <button id="formtest" type="button">Send test stats to the form</button>
+    <span id="formteststate"></span>
+  </div>
+
   <section class="log">
     <h2>Totals per colour count <button id="resetlog" type="button">Clear</button></h2>
     <div id="logbody"></div>
@@ -374,6 +386,7 @@ tr.cur td { font-weight: 700; }
   </details>
 </div>
 
+<div class="ver" id="ver" aria-hidden="true"></div>
 <div class="splash" id="splash" role="dialog" aria-label="Slide 4 start screen">
   <div class="sp-inner">
     <div class="sp-title"><h2>Slide <span class="four">4</span></h2><p>Slide tiles into the gap. Line up four of a colour.</p></div>
@@ -413,6 +426,8 @@ tr.cur td { font-weight: 700; }
 
 <script>
 (function () {
+  const APP_VERSION = 'v1.2';
+  document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
   const PALETTE = ['#e5484d', '#f2cf3a', '#3fae5a', '#2f7fe0', '#8a5ad6', '#f58a2b', '#1db3a6', '#e65fae', '#8b5a3a', '#f3f3ec', '#3a3f3c', '#b6d63a', '#7cc8f2'];
@@ -1195,6 +1210,14 @@ tr.cur td { font-weight: 700; }
     const body = new URLSearchParams(); body.set(STATS_FIELD, JSON.stringify(rec));
     return fetch(STATS_FORM, { method: 'POST', mode: 'no-cors', body });
   }
+  function sendTestStats() {
+    const st = document.getElementById('formteststate');
+    st.textContent = 'Sending…';
+    sendToForm({ v: 1, test: true, note: 'Test from Slide 4 ' + APP_VERSION, at: Date.now(), player: playerKey })
+      .then(() => { st.textContent = 'Sent. Check the form\'s Responses tab.'; },
+            () => { st.textContent = 'Could not send (offline, or this page blocks it).'; });
+  }
+  document.getElementById('formtest').addEventListener('click', sendTestStats);
   function sendStats() {
     if (!shareBox.checked || mode !== 'timed' || moves === 0 || !gs) return;
     const rec = statRecord();
