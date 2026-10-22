@@ -527,7 +527,7 @@ tr.cur td { font-weight: 700; }
   // octave bass on a square wave; saw pads; drums from downsampled noise. 8-bar loop in A minor, 4 sections:
   // groove, solo, solo, breakdown.
   const music = (() => {
-    const BPM = 106, S16 = 60 / BPM / 4, SWING = 0.1;
+    const BPM = 106, S16 = 60 / BPM / 4, SWING = 0.22; // swing set in Bass Lab
     const BARS = [
       { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
       { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
@@ -723,67 +723,70 @@ tr.cur td { font-weight: 700; }
       return notes;
     }
 
-    // Slap bass solo: thumb (T), pop (P) and ghost (G) notes from rhythm templates, mostly A blues pentatonic;
-    // now and then a bebop-style eighth-note run down a scale with chromatic passing tones into the next chord.
-    const BLUES = [9, 0, 2, 3, 4, 7];
-    const BEBOP = [9, 11, 0, 2, 4, 5, 7, 8];
-    const SLAPS = [
-      'T-GTP-GTT-GPT-PG',
-      'T--PG-T-TGP-TGPP',
-      'T-TPG-PTT--PGTP-',
-      'TG-P-GTPT-GPG-TP',
-      'T--GP-TGT-P-GTPG',
-      'T-GPT-P-TGTP-GPP'
+    // Bass solo: hand-written jazz/blues/funk licks per chord type, tuned in Bass Lab.
+    // Chord tones sit on the beats; chromatic notes only pass on offbeats or approach the next chord.
+    // Phrase ends (bars 4 and 8) never get bebop: they lay it down simply.
+    const BASS_CFG = { chroma: 0.2, density: 0.8 };
+    const SOLO_CHORDS = [
+      { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14] },          // Am9
+      { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14] },          // Am9
+      { pc: 2, q: 'min', tones: [0, 3, 7, 10, 14] },          // Dm9
+      { pc: 2, q: 'min', tones: [0, 3, 7, 10, 14] },          // Dm9
+      { pc: 5, q: 'maj', sev: 11, tones: [0, 4, 7, 11, 14] }, // Fmaj9
+      { pc: 7, q: 'maj', sev: 10, tones: [0, 4, 7, 9, 10] },  // G6
+      { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14] },          // Am9
+      { pc: 4, q: 'dom', tones: [0, 4, 7, 10, 15] }           // E7#9
     ];
-    function nearestPc(pc, ref, lo, hi) {
-      let best = null;
-      for (let m = lo; m <= hi; m++) if (m % 12 === pc && (best === null || Math.abs(m - ref) < Math.abs(best - ref))) best = m;
-      return best;
+    const KEY_PCS = [9, 11, 0, 2, 4, 5, 7];
+    // [16th step, interval from root ('A' approach to next chord, 'S' the chord's seventh), length in 16ths, articulation]
+    const LICKS = [
+      { q: 'min', style: 'funk',  n: [[0,0,2,'T'],[2,12,1,'P'],[3,0,1,'G'],[4,10,2,'P'],[6,7,1,'T'],[7,0,1,'G'],[8,0,2,'T'],[10,12,1,'P'],[11,10,1,'P'],[12,7,2,'T'],[14,5,1,'T'],[15,'A',1,'T']] },
+      { q: 'min', style: 'pent',  n: [[0,0,2,'T'],[2,3,1,'T'],[3,5,1,'T'],[4,7,2,'P'],[6,10,2,'P'],[8,12,3,'P'],[11,10,1,'P'],[12,7,2,'T'],[14,'A',2,'T']] },
+      { q: 'min', style: 'funk',  n: [[0,0,1,'T'],[1,0,1,'G'],[2,12,1,'P'],[6,0,1,'T'],[7,12,1,'P'],[10,10,2,'P'],[12,7,2,'T'],[14,12,2,'P']] },
+      { q: 'min', style: 'funk',  n: [[0,0,2,'T'],[2,7,1,'P'],[3,9,1,'P'],[4,10,2,'P'],[6,12,2,'P'],[8,0,1,'T'],[9,0,1,'G'],[10,12,2,'P'],[12,14,2,'P'],[14,12,1,'P'],[15,10,1,'P']] },
+      { q: 'min', style: 'blues', n: [[0,12,1,'P'],[1,10,1,'P'],[2,7,1,'F'],[3,6,1,'F'],[4,5,1,'F'],[5,3,1,'F'],[6,0,2,'T'],[8,0,1,'T'],[9,0,1,'G'],[10,12,1,'P'],[11,0,1,'G'],[12,3,1,'T'],[13,5,1,'T'],[14,'A',2,'T']] },
+      { q: 'min', style: 'blues', n: [[0,7,1,'P'],[1,10,1,'P'],[2,12,2,'P'],[4,10,1,'P'],[5,7,2,'T'],[8,0,2,'T'],[10,0,1,'G'],[11,3,1,'T'],[12,5,1,'T'],[13,6,1,'F'],[14,7,2,'T']] },
+      { q: 'min', style: 'bebop', n: [[0,12,2,'F'],[2,10,2,'F'],[4,7,2,'F'],[6,5,2,'F'],[8,3,2,'F'],[10,2,2,'F'],[12,0,2,'F'],[14,'A',2,'F']] },
+      { q: 'min', style: 'bebop', n: [[0,0,2,'T'],[2,3,2,'P'],[4,5,2,'T'],[6,9,1,'F'],[7,6,1,'F'],[8,7,4,'T'],[12,10,2,'P'],[14,'A',2,'T']] },
+      { q: 'maj', style: 'arp',   n: [[0,0,2,'T'],[2,7,1,'P'],[3,'S',1,'P'],[4,12,2,'P'],[6,14,2,'P'],[8,16,1,'P'],[9,14,1,'P'],[10,12,2,'P'],[12,7,2,'T'],[14,'A',2,'T']] },
+      { q: 'maj', style: 'funk',  n: [[0,0,2,'T'],[2,12,1,'P'],[3,0,1,'G'],[4,7,2,'T'],[6,12,1,'P'],[7,'S',1,'P'],[8,12,2,'P'],[10,7,2,'T'],[12,4,2,'T'],[14,'A',2,'T']] },
+      { q: 'maj', style: 'pent',  n: [[0,0,1,'T'],[1,2,1,'F'],[2,4,1,'F'],[3,7,1,'F'],[4,9,2,'P'],[6,12,2,'P'],[8,9,1,'P'],[9,7,1,'F'],[10,4,2,'T'],[12,2,1,'T'],[13,0,1,'T'],[14,'A',2,'T']] },
+      { q: 'maj', style: 'blues', n: [[0,0,2,'T'],[2,0,1,'G'],[3,9,1,'P'],[4,12,2,'P'],[6,0,2,'T'],[8,7,1,'T'],[9,8,1,'F'],[10,9,2,'P'],[12,7,2,'T'],[14,4,2,'T']] },
+      { q: 'maj', style: 'bebop', n: [[0,0,2,'F'],[2,2,2,'F'],[4,4,2,'F'],[6,5,2,'F'],[8,7,2,'F'],[10,9,2,'F'],[12,'S',2,'F'],[14,'A',2,'F']] },
+      { q: 'dom', style: 'bebop', n: [[0,12,2,'F'],[2,11,2,'F'],[4,10,2,'F'],[6,9,2,'F'],[8,7,2,'F'],[10,5,2,'F'],[12,4,2,'F'],[14,'A',2,'F']] },
+      { q: 'dom', style: 'blues', n: [[0,0,2,'T'],[2,15,1,'P'],[3,16,1,'P'],[4,12,2,'P'],[6,10,2,'P'],[8,7,2,'T'],[10,4,2,'T'],[12,0,2,'T'],[14,'A',2,'T']] },
+      { q: 'dom', style: 'arp',   n: [[0,0,1,'T'],[1,0,1,'G'],[2,4,1,'F'],[3,7,1,'F'],[4,10,2,'P'],[6,15,1,'P'],[7,16,1,'P'],[8,12,4,'P'],[12,10,1,'P'],[13,7,1,'T'],[14,4,1,'T'],[15,'A',1,'T']] },
+      { q: 'dom', style: 'pent',  n: [[0,0,4,'F'],[4,4,4,'F'],[8,7,4,'F'],[12,'A',4,'F']] }
+    ];
+    const rootIn = (pc, lo, hi) => { for (let m = lo; m <= hi; m++) if (m % 12 === pc) return m; return lo; };
+    function wpick(items, w) { const tot = w.reduce((a, b) => a + b, 0); let r = Math.random() * tot; for (let i = 0; i < items.length; i++) { r -= w[i]; if (r <= 0) return items[i]; } return items[items.length - 1]; }
+    function lickWeight(style, phraseEnd) {
+      const c = BASS_CFG.chroma;
+      if (style === 'bebop') return phraseEnd ? 0 : 1.5 * c;
+      if (style === 'blues') return 0.3 + 1.2 * c;
+      if (phraseEnd && (style === 'pent' || style === 'funk')) return 1.6;   // lay it down
+      return 1;
     }
-    const pickOne = a => a[Math.floor(Math.random() * a.length)];
-    function slapBar(bar, B, NB) {
-      const notes = {};
-      const r = nearestPc(B.root % 12, 45, 40, 52);
-      if ((bar % 8 === 3 || bar % 8 === 7) && Math.random() < 0.6) {
-        // Bebop run: thumb root on 1, then seven eighths stepping down, landing a half step from the next root.
-        notes[0] = ['T', r, 2];
-        let m = nearestPc(pickOne(B.tones), 62, 57, 66);
-        for (let st = 2; st <= 12; st += 2) {
-          notes[st] = ['F', m, 2];
-          do { m--; } while (!BEBOP.includes(m % 12) && !B.tones.includes(m % 12));
-        }
-        const target = nearestPc(NB.root % 12, m, 45, 57);
-        notes[14] = ['F', target + (Math.random() < 0.5 ? 1 : -1), 2];
-        return notes;
-      }
-      const tpl = pickOne(SLAPS);
-      let lastThumb = r;
-      for (let st = 0; st < 16; st++) {
-        const c = tpl[st];
-        if (c === '-') continue;
-        let len = 1;
-        while (st + len < 16 && tpl[st + len] === '-' && len < 3) len++;
-        if (c === 'T') {
-          let m = r;
-          if (st > 0 && Math.random() > 0.55) {
-            const opts = [];
-            for (let x = 40; x <= 52; x++) if (BLUES.includes(x % 12) && Math.abs(x - r) <= 7 && x !== r) opts.push(x);
-            if (opts.length) m = pickOne(opts);
-          }
-          lastThumb = m;
-          notes[st] = ['T', m, len];
-        } else if (c === 'P') {
-          let m = lastThumb + 12;
-          if (Math.random() > 0.55) {
-            const opts = [];
-            for (let x = 52; x <= 64; x++) if (BLUES.includes(x % 12)) opts.push(x);
-            m = pickOne(opts);
-          }
-          notes[st] = ['P', m, len];
-        } else {
-          notes[st] = ['G', lastThumb, 1];
-        }
-      }
+    function approachNote(nextCh) {
+      const target = rootIn(nextCh.pc, 40, 51), c = BASS_CFG.chroma;
+      const kind = wpick(['below', 'above', 'step', 'fifth'], [0.7 * c, 0.35 * c, 0.6 * (1 - c) + 0.1, 0.5 * (1 - c) + 0.1]);
+      if (kind === 'below') return target - 1;
+      if (kind === 'above') return target + 1;
+      if (kind === 'step') { let m = target + 1; while (!KEY_PCS.includes(m % 12) && !(nextCh.q === 'dom' && m % 12 === 8)) m++; return m; }
+      return target + 7 <= 58 ? target + 7 : target - 5;
+    }
+    function slapBar(bar) {
+      const bi = bar % 8, ch = SOLO_CHORDS[bi], nextCh = SOLO_CHORDS[(bi + 1) % 8];
+      const phraseEnd = bi % 4 === 3;
+      const pool = LICKS.filter(l => l.q === ch.q);
+      const w = pool.map(l => lickWeight(l.style, phraseEnd));
+      const lick = w.some(x => x > 0) ? wpick(pool, w) : pool[0];
+      const root = rootIn(ch.pc, 40, 51), notes = {};
+      lick.n.forEach(([st, rel, len, art], i) => {
+        if (i > 0 && rel !== 'A' && st % 4 !== 0 && Math.random() > BASS_CFG.density) return;
+        const m = rel === 'A' ? approachNote(nextCh) : root + (rel === 'S' ? ch.sev : rel);
+        notes[st] = [art, m, len];
+      });
       return notes;
     }
     // The solo plays on the same plucked bass as the groove: thumb, pop and run notes differ only in level,
@@ -806,7 +809,7 @@ tr.cur td { font-weight: 700; }
       else if (s !== 15) noiseHit(t, 'highpass', 7000, (s % 2 ? 0.06 : 0.13) * (brk ? 0.5 : 1), 0.035);
       // Octave bass, anticipating the next chord on the last eighth
       if (!bassSolo && s in BASS) bass((s >= 14 ? NB.root : B.root) + BASS[s], t, S16 * (s === 14 ? 1.8 : 0.85));
-      if (s === 0) slapNotes = bassSolo ? slapBar(bar, B, NB) : {};
+      if (s === 0) slapNotes = bassSolo ? slapBar(bar) : {};
       if (slapNotes[s]) slap(slapNotes[s][0], slapNotes[s][1], t, slapNotes[s][2] * S16 * 0.95);
       // Pads
       if (s === 0) pad(B.pad, t, S16 * 16, brk ? 0.075 : bassSolo ? 0.035 : 0.05);
