@@ -216,7 +216,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
 .slot, .tile {
   position: absolute;
   left: 0; top: 0;
-  width: 20%; height: 20%;
+  width: calc(100% / var(--n, 5)); height: calc(100% / var(--n, 5));
   padding: clamp(3px, 1vw, 5px);
   box-sizing: border-box;
 }
@@ -226,7 +226,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
   background: var(--well);
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.18);
 }
-.tile { transition: transform 150ms cubic-bezier(.3,.7,.3,1); z-index: 1; }
+.tile { transition: transform 150ms cubic-bezier(.3,.7,.3,1), width 380ms ease, height 380ms ease; z-index: 1; }
 .tile.moving { z-index: 2; }
 .tile b {
   display: block; width: 100%; height: 100%;
@@ -265,6 +265,13 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
 .timebar.low .tb-fill { background: var(--danger); animation: blink 0.8s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0.55; } }
 .tb-bonus { position: absolute; right: 4px; top: -22px; font-family: var(--font-num); font-weight: 700; font-size: 0.9rem; color: var(--time); opacity: 0; }
+.stat .k .mult { font-family: var(--font-num); font-weight: 700; color: var(--fg); letter-spacing: 0; margin-left: 2px; }
+.ptspop {
+  position: absolute; left: 0; right: 0; top: -14px; z-index: 7; display: flex; justify-content: center; pointer-events: none; opacity: 0;
+}
+.ptspop span { font-family: var(--font-num); font-weight: 700; font-size: 1rem; background: var(--fg); color: var(--bg); padding: 3px 10px; border-radius: 8px; }
+.ptspop.pop { animation: ptspop 1.1s ease-out; }
+@keyframes ptspop { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
 .tb-bonus.pop { animation: bonus 0.9s ease-out; }
 @keyframes bonus { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
 .tb-info { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-num); font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -316,9 +323,10 @@ tr.cur td { font-weight: 700; }
       </label>
       <label class="sel testonly" for="colors">Colors
         <select id="colors">
-          <option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+          <option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option>
         </select>
       </label>
+      <label class="sel testonly" for="startl2"><input type="checkbox" id="startl2"> Start 6×6</label>
       <button id="newgame" type="button">New game</button>
       <button id="menu" type="button">Menu</button>
     </div>
@@ -342,7 +350,7 @@ tr.cur td { font-weight: 700; }
   </div>
 
   <div class="stats">
-    <div class="stat"><span class="k">Score</span><span class="v" id="score">0</span></div>
+    <div class="stat"><span class="k">Score <span class="mult" id="mult"></span></span><span class="v" id="score">0</span></div>
     <div class="stat testonly"><span class="k">Moves</span><span class="v" id="moves">0</span></div>
     <div class="stat"><span class="k" id="ratiok">Moves / 1000</span><span class="v" id="ratio">–</span></div>
   </div>
@@ -353,6 +361,7 @@ tr.cur td { font-weight: 700; }
   </div>
 
   <div class="tray">
+    <div class="ptspop" id="ptspop" aria-hidden="true"></div>
     <div class="board" id="board" aria-label="5 by 5 sliding board"></div>
     <div class="banner" id="banner" aria-live="polite"></div>
     <div class="over" id="over" hidden>
@@ -379,7 +388,7 @@ tr.cur td { font-weight: 700; }
     <summary>Rules, voice and stats</summary>
     <div class="morebody">
       <div id="voiceslot"></div>
-  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
+  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Every colour above six adds 25% (×2 at ten colours). After ten colours the board grows to 6×6 with nine colours and climbs again to thirteen; the multiplier keeps rising (×3.25 at the top) and a line of six scores 6,000. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
   <p class="hint"><strong>Timed:</strong> you start with 6 colours and a one-minute bar that runs down. A line of 4 adds 5 seconds, a line of 5 adds 15. Every two minutes another colour joins, up to 10. The game ends when the bar runs out.</p>
 
   <section class="log">
@@ -429,9 +438,9 @@ tr.cur td { font-weight: 700; }
 
 <script>
 (function () {
-  const N = 5;
+  let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
-  const PALETTE = ['#e5484d', '#f2cf3a', '#3fae5a', '#2f7fe0', '#8a5ad6', '#f58a2b', '#1db3a6', '#e65fae', '#8b5a3a', '#f3f3ec', '#3a3f3c', '#b6d63a'];
+  const PALETTE = ['#e5484d', '#f2cf3a', '#3fae5a', '#2f7fe0', '#8a5ad6', '#f58a2b', '#1db3a6', '#e65fae', '#8b5a3a', '#f3f3ec', '#3a3f3c', '#b6d63a', '#7cc8f2'];
   // One symbol per colour, same order as PALETTE; dark ink on the light tiles.
   const SYMBOLS = [
     { d: 'M12 21s-7.5-4.6-9.6-9.2C.8 7.9 3.3 4 7 4c2.1 0 3.6 1.1 5 2.9C13.4 5.1 14.9 4 17 4c3.7 0 6.2 3.9 4.6 7.8C19.5 16.4 12 21 12 21z' },
@@ -445,7 +454,8 @@ tr.cur td { font-weight: 700; }
     { d: 'M12 3.5l9 16H3z' },
     { d: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17zm0 4.5a4 4 0 1 1 0 8a4 4 0 1 1 0-8z', ink: 'rgba(30,35,32,0.45)' },
     { d: 'M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z' },
-    { d: 'M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z', ink: 'rgba(40,55,0,0.55)' }
+    { d: 'M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z', ink: 'rgba(40,55,0,0.55)' },
+    { d: 'M5 5h14v14H5z', ink: 'rgba(10,50,80,0.55)' }
   ];
   const board = document.getElementById('board');
   const pimpBox = document.getElementById('pimp');
@@ -528,17 +538,39 @@ tr.cur td { font-weight: 700; }
   // groove, solo, solo, breakdown.
   const music = (() => {
     const BPM = 106, S16 = 60 / BPM / 4, SWING = 0.22; // swing set in Bass Lab
-    const BARS = [
-      { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
-      { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
-      { root: 38, pad: [53, 57, 60, 64], tones: [2, 5, 9, 0, 4] },    // Dm9
-      { root: 38, pad: [53, 57, 60, 64], tones: [2, 5, 9, 0, 4] },    // Dm9
-      { root: 29, pad: [57, 60, 64, 67], tones: [5, 9, 0, 4, 7] },    // Fmaj9
-      { root: 31, pad: [55, 59, 62, 64], tones: [7, 11, 2, 4] },      // G6
-      { root: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11] },   // Am9
-      { root: 28, pad: [56, 62, 67, 71], tones: [4, 8, 2, 7, 11] }    // E7#9
+    // Chords written in A minor; each song cycle transposes them. tones: absolute pitch classes for the lead;
+    // st: chord tones relative to the root for the bass solo; r: groove bass root (MIDI); pad: voicing (MIDI).
+    const CHORDLIB = {
+      i9:   { r: 33, pad: [55, 59, 60, 64], tones: [9, 0, 4, 7, 11], pc: 9, q: 'min', st: [0, 3, 7, 10, 14] },        // Am9
+      iv9:  { r: 38, pad: [53, 57, 60, 64], tones: [2, 5, 9, 0, 4],  pc: 2, q: 'min', st: [0, 3, 7, 10, 14] },        // Dm9
+      VI:   { r: 29, pad: [57, 60, 64, 67], tones: [5, 9, 0, 4, 7],  pc: 5, q: 'maj', sev: 11, st: [0, 4, 7, 11, 14] }, // Fmaj9
+      VII6: { r: 31, pad: [55, 59, 62, 64], tones: [7, 11, 2, 4],    pc: 7, q: 'maj', sev: 10, st: [0, 4, 7, 9, 10] },  // G6
+      V7s9: { r: 28, pad: [56, 62, 67, 71], tones: [4, 8, 2, 7, 11], pc: 4, q: 'dom', st: [0, 4, 7, 10, 15] },        // E7#9
+      IV9:  { r: 38, pad: [54, 57, 60, 64], tones: [2, 6, 9, 0, 4],  pc: 2, q: 'dom', st: [0, 4, 7, 10, 14] },        // D9 (dorian IV)
+      v7:   { r: 28, pad: [55, 59, 62, 64], tones: [4, 7, 11, 2],    pc: 4, q: 'min', st: [0, 3, 7, 10] }            // Em7
+    };
+    // Scheme 1: the original. Scheme 2: 80s aeolian lift (bVI-bVII-i) with a dorian IV9.
+    const SCHEMES = [
+      ['i9', 'i9', 'iv9', 'iv9', 'VI', 'VII6', 'i9', 'V7s9'],
+      ['VI', 'VII6', 'i9', 'IV9', 'VI', 'VII6', 'v7', 'V7s9']
     ];
-    const PENT = [9, 0, 2, 4, 7];
+    // Keys in semitones from A minor: A, C, D, F minor. The key changes every second cycle.
+    const KEYSHIFTS = [0, 3, 5, -4];
+    const keyShift = cycle => KEYSHIFTS[Math.floor(cycle / SCHEMES.length) % KEYSHIFTS.length];
+    function chordAt(name, sh) {
+      const c = CHORDLIB[name];
+      let r = c.r + sh; while (r < 26) r += 12; while (r > 40) r -= 12;
+      return { name, root: r, pad: c.pad.map(m => m + sh), tones: c.tones.map(t => (t + sh + 12) % 12),
+        pc: (c.pc + sh + 12) % 12, q: c.q, sev: c.sev, st: c.st };
+    }
+    function songFor(cycle) {
+      const sh = keyShift(cycle), nsh = keyShift(cycle + 1);
+      const bars = SCHEMES[cycle % SCHEMES.length].map(n => chordAt(n, sh));
+      if (nsh !== sh) bars[7] = chordAt('V7s9', nsh);   // pivot: the new key's dominant leads into the modulation
+      const tonic = (9 + sh + 12) % 12;
+      return { bars, pent: [0, 3, 5, 7, 10].map(i => (tonic + i) % 12), keyPcs: [0, 2, 3, 5, 7, 8, 10].map(i => (tonic + i) % 12), lead: (tonic + 11) % 12 };
+    }
+    let song = songFor(0), songCycle = 0;
     const BASS = { 0: 0, 2: 12, 3: 0, 6: 12, 8: 0, 10: 12, 11: 0, 13: 12, 14: 0 };
     const RHYTHMS = [
       [[0, 2], [2, 2], [4, 1], [5, 1], [6, 4], [11, 1], [12, 2], [14, 2]],
@@ -708,7 +740,7 @@ tr.cur td { font-weight: 700; }
       const rh = bar % 8 === 7 || Math.random() < 0.15 ? LONG : RHYTHMS[Math.floor(Math.random() * RHYTHMS.length)];
       const notes = {};
       const pool = [];
-      for (let m = 62; m <= 88; m++) if (PENT.includes(m % 12) || B.tones.includes(m % 12)) pool.push(m);
+      for (let m = 62; m <= 88; m++) if (song.pent.includes(m % 12) || B.tones.includes(m % 12)) pool.push(m);
       rh.forEach(([s, len]) => {
         if (Math.random() < 0.08) return;
         const strong = s % 4 === 0 || len >= 4;
@@ -727,17 +759,6 @@ tr.cur td { font-weight: 700; }
     // Chord tones sit on the beats; chromatic notes only pass on offbeats or approach the next chord.
     // Phrase ends (bars 4 and 8) never get bebop: they lay it down simply.
     const BASS_CFG = { chroma: 0.2, density: 0.8 };
-    const SOLO_CHORDS = [
-      { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14] },          // Am9
-      { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14] },          // Am9
-      { pc: 2, q: 'min', tones: [0, 3, 7, 10, 14] },          // Dm9
-      { pc: 2, q: 'min', tones: [0, 3, 7, 10, 14] },          // Dm9
-      { pc: 5, q: 'maj', sev: 11, tones: [0, 4, 7, 11, 14] }, // Fmaj9
-      { pc: 7, q: 'maj', sev: 10, tones: [0, 4, 7, 9, 10] },  // G6
-      { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14] },          // Am9
-      { pc: 4, q: 'dom', tones: [0, 4, 7, 10, 15] }           // E7#9
-    ];
-    const KEY_PCS = [9, 11, 0, 2, 4, 5, 7];
     // [16th step, interval from root ('A' approach to next chord, 'S' the chord's seventh), length in 16ths, articulation]
     const LICKS = [
       { q: 'min', style: 'funk',  n: [[0,0,2,'T'],[2,12,1,'P'],[3,0,1,'G'],[4,10,2,'P'],[6,7,1,'T'],[7,0,1,'G'],[8,0,2,'T'],[10,12,1,'P'],[11,10,1,'P'],[12,7,2,'T'],[14,5,1,'T'],[15,'A',1,'T']] },
@@ -768,20 +789,20 @@ tr.cur td { font-weight: 700; }
       return 1;
     }
     function approachNote(nextCh) {
-      const target = rootIn(nextCh.pc, 40, 51), c = BASS_CFG.chroma;
+      const target = rootIn(nextCh.pc, 28, 39), c = BASS_CFG.chroma;
       const kind = wpick(['below', 'above', 'step', 'fifth'], [0.7 * c, 0.35 * c, 0.6 * (1 - c) + 0.1, 0.5 * (1 - c) + 0.1]);
       if (kind === 'below') return target - 1;
       if (kind === 'above') return target + 1;
-      if (kind === 'step') { let m = target + 1; while (!KEY_PCS.includes(m % 12) && !(nextCh.q === 'dom' && m % 12 === 8)) m++; return m; }
-      return target + 7 <= 58 ? target + 7 : target - 5;
+      if (kind === 'step') { let m = target + 1; while (!song.keyPcs.includes(m % 12) && !(nextCh.q === 'dom' && m % 12 === song.lead)) m++; return m; }
+      return target + 7 <= 46 ? target + 7 : target - 5;
     }
     function slapBar(bar) {
-      const bi = bar % 8, ch = SOLO_CHORDS[bi], nextCh = SOLO_CHORDS[(bi + 1) % 8];
+      const bi = bar % 8, ch = song.bars[bi], nextCh = song.bars[(bi + 1) % 8];
       const phraseEnd = bi % 4 === 3;
       const pool = LICKS.filter(l => l.q === ch.q);
       const w = pool.map(l => lickWeight(l.style, phraseEnd));
       const lick = w.some(x => x > 0) ? wpick(pool, w) : pool[0];
-      const root = rootIn(ch.pc, 40, 51), notes = {};
+      const root = rootIn(ch.pc, 28, 39), notes = {}; // same register as the groove bass
       lick.n.forEach(([st, rel, len, art], i) => {
         if (i > 0 && rel !== 'A' && st % 4 !== 0 && Math.random() > BASS_CFG.density) return;
         const m = rel === 'A' ? approachNote(nextCh) : root + (rel === 'S' ? ch.sev : rel);
@@ -793,13 +814,17 @@ tr.cur td { font-weight: 700; }
     // and ghost notes are very short, quiet plucks.
     function slap(kind, m, t, dur) {
       if (kind === 'G') { bass(m, t, 0.045, false, 0.35); return; }
-      bass(m, t, Math.max(0.08, dur), false, kind === 'P' ? 1.1 : kind === 'F' ? 0.95 : 1);
+      bass(m, t, Math.max(0.08, dur));
     }
 
     function schedule(st, t) {
       // Sections of 8 bars: groove, lead solo, lead solo, bass solo, breakdown.
       const bar = Math.floor(st / 16), s = st % 16, bi = bar % 8, sec = Math.floor(bar / 8) % 5;
-      const B = BARS[bi], NB = BARS[(bi + 1) % 8];
+      // A cycle is all five sections (40 bars); then the chord scheme changes, and every second cycle the key.
+      const cycle = Math.floor(bar / 40);
+      if (cycle !== songCycle) { song = songFor(cycle); songCycle = cycle; }
+      const B = song.bars[bi];
+      const NB = (sec === 4 && bi === 7) ? songFor(cycle + 1).bars[0] : song.bars[(bi + 1) % 8];
       const brk = sec === 4, soloOn = sec === 1 || sec === 2, bassSolo = sec === 3;
       // Drums
       if (!brk && (s === 0 || s === 6 || s === 8 || (bar % 2 && s === 11))) kick(t, s === 0 ? 0.9 : 0.75);
@@ -887,7 +912,7 @@ tr.cur td { font-weight: 700; }
   const bannerEl = document.getElementById('banner');
   const overEl = document.getElementById('over');
   const overText = document.getElementById('overtext');
-  const fmt = p => (p * 1000).toLocaleString('en-US');
+  const fmt = p => Math.round(p * 1000).toLocaleString('en-US');
 
   // Timed mode
   const T_MAX = 60, LEVEL_EVERY = 120, BESTKEY = 'slide4-best-timed';
@@ -995,20 +1020,20 @@ tr.cur td { font-weight: 700; }
     bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show');
   }
   function bonus(sec) {
-    tbBonus.textContent = '+' + sec + ' s';
+    tbBonus.textContent = sec >= 60 ? 'Clock refilled' : '+' + sec + ' s';
     tbBonus.classList.remove('pop'); void tbBonus.offsetWidth; tbBonus.classList.add('pop');
   }
   function renderTime() {
     tbFill.style.width = Math.max(0, timeLeft / T_MAX * 100) + '%';
     tbSec.textContent = clockOn || elapsed > 0 ? Math.ceil(Math.max(0, timeLeft)) + ' s left' : 'Starts on your first move';
     const nextIn = LEVEL_EVERY - (elapsed % LEVEL_EVERY);
-    tbColors.textContent = nColors + ' colors' + (nColors < 10 && elapsed > 0 ? ' · next in ' + Math.ceil(nextIn) + ' s' : '');
+    tbColors.textContent = (level === 2 ? '6×6 · ' : '') + nColors + ' colors' + (rung < LADDER.length - 1 && elapsed > 0 ? ' · next in ' + Math.ceil(nextIn) + ' s' : '');
     timebar.classList.toggle('low', clockOn && timeLeft <= 10);
   }
   // Per-game record for the opt-in stats.
   let gs = null;
   function freshStats() {
-    return { l3: 0, l4: 0, l5: 0, cross: 0, bonusNominal: 0, bonusGained: 0, surv: 0, ev: [], tl: [] };
+    return { l3: 0, l4: 0, l5: 0, l6: 0, cross: 0, bonusNominal: 0, bonusGained: 0, surv: 0, ev: [], tl: [] };
   }
   gs = freshStats();
   function frame(now) {
@@ -1018,13 +1043,8 @@ tr.cur td { font-weight: 700; }
     if (dt > 0.25) dt = 0; // tab was hidden: the clock pauses
     timeLeft -= dt; elapsed += dt;
     if (gs && Math.floor(elapsed / 10) >= gs.tl.length) gs.tl.push(Math.max(0, Math.round(timeLeft)));
-    const want = Math.min(10, 6 + Math.floor(elapsed / LEVEL_EVERY));
-    if (want > nColors) {
-      nColors = want; sel.value = String(nColors);
-      banner(nColors + ' colors');
-      // Spoken as words: SAM reads digits one by one ("one zero").
-      say((['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'][nColors] || String(nColors)) + ' colors');
-    }
+    const target = Math.min(LADDER.length - 1, Math.floor(elapsed / LEVEL_EVERY));
+    if (target > rung) goToRung(target);
     if (timeLeft <= 0) { timeLeft = 0; renderTime(); gameOver(); return; }
     renderTime();
     requestAnimationFrame(frame);
@@ -1043,7 +1063,7 @@ tr.cur td { font-weight: 700; }
     (list || []).forEach(e => {
       if (!e || typeof e.s !== 'number' || e.s <= 0) return;
       const k = e.s + '|' + (e.t || 0);
-      if (!seen.has(k)) { seen.add(k); out.push({ s: e.s, t: e.t || 0, c: e.c || 0, n: typeof e.n === 'string' ? e.n.slice(0, 3) : '' }); }
+      if (!seen.has(k)) { seen.add(k); out.push({ s: e.s, t: e.t || 0, c: e.c || 0, n: typeof e.n === 'string' ? e.n.slice(0, 3) : '', r: e.r === 2 ? 2 : 1, l: e.l === 2 ? 2 : 1 }); }
     });
     return out.sort((a, b) => b.s - a.s || a.t - b.t).slice(0, 10);
   }
@@ -1057,10 +1077,10 @@ tr.cur td { font-weight: 700; }
     scoreWrite = scoreWrite.then(() => scoreRef.set(body)).catch(err => { console.warn('score save', err); });
   }
   // Returns the entry's place (0-based), or -1 if it didn't make the list.
-  function addTimedScore(sc, colorsReached) {
+  function addTimedScore(sc, colorsReached, lv) {
     if (sc <= 0) return { rank: -1 };
     const t = Date.now();
-    scores.timed = cleanList(scores.timed.concat([{ s: sc, t, c: colorsReached, n: '' }]));
+    scores.timed = cleanList(scores.timed.concat([{ s: sc, t, c: colorsReached, n: '', r: 2, l: lv || 1 }]));
     saveScoresLocal(); saveScoresRemote(); renderScores();
     return { rank: scores.timed.findIndex(e => e.t === t && e.s === sc), t, s: sc };
   }
@@ -1161,9 +1181,9 @@ tr.cur td { font-weight: 700; }
   })();
   function statRecord() {
     return {
-      v: 1, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
+      v: 1, rules: 2, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
       score: score * 1000, moves, seconds: Math.round(elapsed), colors: nColors,
-      lines3: gs.l3, lines4: gs.l4, lines5: gs.l5, crosses: gs.cross, survivals: gs.surv,
+      lines3: gs.l3, lines4: gs.l4, lines5: gs.l5, lines6: gs.l6, level, board: N, crosses: gs.cross, survivals: gs.surv,
       bonusSeconds: gs.bonusNominal, bonusSecondsUsed: Math.round(gs.bonusGained),
       events: gs.ev, timeLeftEvery10s: gs.tl,
       screen: Math.round(Math.min(window.innerWidth, window.innerHeight))
@@ -1191,7 +1211,7 @@ tr.cur td { font-weight: 700; }
     over = true; clockOn = false;
     const newBest = score > bestAtStart && score > 0;
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
-    const placed = mode === 'timed' ? addTimedScore(score, nColors) : { rank: -1 };
+    const placed = mode === 'timed' ? addTimedScore(score, nColors, level) : { rank: -1 };
     overText.innerHTML = 'Score <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? 'New high score!' : 'High score ' + fmt(best));
     iniEl.hidden = true; overBtns.hidden = false;
     statCopy.hidden = true;
@@ -1213,20 +1233,35 @@ tr.cur td { font-weight: 700; }
 
   let survive = false; // no colour has 4 tiles: lines of 3 count
   const minLen = () => survive ? 3 : 4;
+  let freeBase = 7; // free play: starting colours
+  let freeNextAt = 15; // free play: score (in thousands) at which the next colour joins
+  // Inflation: each colour above six adds 25% to every line's points.
+  // Difficulty ladder: [level, colours]. Level 1 is 5x5 (6-10 colours); level 2 is 6x6 (9-13 colours).
+  const LADDER = [[1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13]];
+  let level = 1, rung = 0, pendingRung = -1;
+  const multFor = (lv, n) => lv === 1 ? 1 + 0.25 * Math.max(0, n - 6) : 2 + 0.25 * (n - 8);
+  const mult = n => multFor(level, n);
+  const NUMWORD = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen'];
   let nColors = 7, grid = [], hole = N * N - 1, score = 0, moves = 0, busy = false, nextId = 1;
   let totals = {};
   try { totals = JSON.parse(localStorage.getItem(LOGKEY) || '{}') || {}; } catch (e) { totals = {}; }
 
   // Static wells
-  for (let i = 0; i < N * N; i++) {
-    const s = document.createElement('div');
-    s.className = 'slot';
-    s.style.transform = pos(i);
-    s.innerHTML = '<i></i>';
-    board.appendChild(s);
+  function buildWells() {
+    board.querySelectorAll('.slot').forEach(e => e.remove());
+    board.style.setProperty('--n', N);
+    board.setAttribute('aria-label', N + ' by ' + N + ' sliding board');
+    for (let i = 0; i < N * N; i++) {
+      const s = document.createElement('div');
+      s.className = 'slot';
+      s.style.transform = pos(i);
+      s.innerHTML = '<i></i>';
+      board.insertBefore(s, board.firstChild);
+    }
   }
+  buildWells();
 
-  function pos(i) { return 'translate(' + (i % N) * 100 + '%,' + Math.floor(i / N) * 100 + '%)'; }
+  function pos(i, n) { n = n || N; return 'translate(' + (i % n) * 100 + '%,' + Math.floor(i / n) * 100 + '%)'; }
   function rand(a) { return a[Math.floor(Math.random() * a.length)]; }
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function colorsOf() { return grid.map(t => t ? t.color : null); }
@@ -1290,6 +1325,54 @@ tr.cur td { font-weight: 700; }
     t.b.querySelector('path').setAttribute('d', s.d);
   }
 
+  // Move up the difficulty ladder: more colours, or the level-up to a 6x6 board.
+  function goToRung(target) {
+    if (target <= rung) return;
+    const [lv, n] = LADDER[target];
+    if (lv !== level) {
+      if (busy || over) { pendingRung = target; return; }
+      pendingRung = -1; rung = target; levelUp(n); return;
+    }
+    rung = target; nColors = n; sel.value = String(n); renderStats();
+    if (mode === 'timed') renderTime();
+    setTimeout(() => { banner(n + ' colors'); say((NUMWORD[n] || String(n)) + ' colors'); }, 500);
+  }
+  function levelUp(n) {
+    busy = true;
+    const oldN = N, newN = oldN + 1, oldGrid = grid, oldHole = hole;
+    const newGrid = Array(newN * newN).fill(null);
+    let newHole = newN * newN - 1;
+    for (let i = 0; i < oldN * oldN; i++) {
+      const j = Math.floor(i / oldN) * newN + (i % oldN);
+      if (i === oldHole) newHole = j; else newGrid[j] = oldGrid[i];
+    }
+    N = newN; level = 2; nColors = n; sel.value = String(n);
+    buildWells();
+    grid = newGrid; hole = newHole;
+    const cols = colorsOf(), fresh = [];
+    for (let i = 0; i < N * N; i++) {
+      if (i === hole) continue;
+      if (!grid[i] || grid[i].color >= nColors) { fresh.push(i); cols[i] = null; }
+    }
+    recolor(cols, fresh);
+    grid.forEach((t, i) => { if (t) t.el.style.transform = pos(i); });
+    fresh.forEach(i => {
+      let t = grid[i];
+      if (!t) { t = makeTile(cols[i]); grid[i] = t; t.el.style.transform = pos(i); }
+      else { t.color = cols[i]; paint(t); }
+      t.el.classList.remove('grow'); void t.el.offsetWidth; t.el.classList.add('grow');
+    });
+    markMovable();
+    if (mode === 'timed') { timeLeft = T_MAX; bonus(60); renderTime(); }
+    renderStats();
+    banner('Level 2'); say('level two');
+    setTimeout(() => {
+      grid.forEach(t => t && t.el.classList.remove('grow'));
+      busy = false; checkSurvive();
+      if (pendingRung > rung) goToRung(pendingRung);
+    }, 450);
+  }
+
   function build(cols, h) {
     board.querySelectorAll('.tile').forEach(e => e.remove());
     hole = h;
@@ -1317,7 +1400,13 @@ tr.cur td { font-weight: 700; }
       sel.disabled = false;
       timebar.hidden = true;
     }
+    const startL2 = document.getElementById('startl2').checked && document.body.classList.contains('test');
+    N = startL2 ? 6 : 5; level = startL2 ? 2 : 1; pendingRung = -1;
+    buildWells();
+    if (startL2) { rung = 5; sel.value = '9'; }
     nColors = parseInt(sel.value, 10);
+    if (!startL2) { rung = LADDER.findIndex(([l, c]) => l === 1 && c === nColors); if (rung < 0) rung = nColors < 6 ? -1 : 4; }
+    freeBase = nColors; freeNextAt = 15 * mult(nColors);
     const cols = Array(N * N).fill(null);
     const h = N * N - 1;
     recolor(cols, [...Array(N * N).keys()].filter(i => i !== h));
@@ -1371,21 +1460,29 @@ tr.cur td { font-weight: 700; }
     const cols = colorsOf();
     // Only lines through the tile that just moved count.
     const lines = findLines(cols).filter(l => l.includes(dest));
-    if (!lines.length) { busy = false; return; }
+    if (!lines.length) { busy = false; if (pendingRung > rung) goToRung(pendingRung); return; }
     // 4 in a line = 1, 5 in a line = 3, 3 in a line (survival only) = 0.5; crossing lines score double their sum.
-    let pts = lines.reduce((s, l) => s + (l.length >= 5 ? 3 : l.length === 4 ? 1 : 0.5), 0);
+    let pts = lines.reduce((s, l) => s + (l.length >= 6 ? 6 : l.length === 5 ? 3 : l.length === 4 ? 1 : 0.5), 0);
     if (lines.length > 1) pts *= 2;
+    pts *= mult(nColors);
+    showPts(pts);
     try { playScore(lines.length > 1 || lines.some(l => l.length >= 5)); } catch (err) { console.warn(err); }
     score += pts;
-    tally(0, pts);
+    if (mode === 'free' && rung < LADDER.length - 1 && score >= freeNextAt) {
+      // Each step is about 15 lines' worth at the next rung's multiplier.
+      let target = rung;
+      while (target < LADDER.length - 1 && score >= freeNextAt) { target++; freeNextAt += 15 * multFor(LADDER[target][0], LADDER[target][1]); }
+      goToRung(target);
+    }
+    tally(0, pts, lines.length);
     if (gs) {
-      lines.forEach(l => { if (l.length >= 5) gs.l5++; else if (l.length === 4) gs.l4++; else gs.l3++; });
+      lines.forEach(l => { if (l.length >= 6) gs.l6++; else if (l.length === 5) gs.l5++; else if (l.length === 4) gs.l4++; else gs.l3++; });
       if (lines.length > 1) gs.cross++;
       // event: [seconds into game, longest line, lines, points (in thousands), moves so far]
       if (gs.ev.length < 400) gs.ev.push([Math.round(elapsed * 10) / 10, Math.max(...lines.map(l => l.length)), lines.length, pts, moves]);
     }
     if (mode === 'timed' && !over) {
-      const add = lines.reduce((s, l) => s + (l.length >= 5 ? 15 : l.length === 4 ? 5 : 3), 0);
+      const add = lines.reduce((s, l) => s + (l.length >= 6 ? 25 : l.length === 5 ? 15 : l.length === 4 ? 5 : 3), 0);
       if (gs) { gs.bonusNominal += add; gs.bonusGained += Math.min(add, T_MAX - timeLeft); }
       timeLeft = Math.min(T_MAX, timeLeft + add);
       bonus(add);
@@ -1408,11 +1505,18 @@ tr.cur td { font-weight: 700; }
         t.el.classList.add('grow');
       });
       checkSurvive();
-      setTimeout(() => { cells.forEach(i => grid[i] && grid[i].el.classList.remove('grow')); busy = false; }, 230);
+      setTimeout(() => { cells.forEach(i => grid[i] && grid[i].el.classList.remove('grow')); busy = false; if (pendingRung > rung) goToRung(pendingRung); }, 230);
     }, 330);
   }
 
+  function showPts(p) {
+    const el = document.getElementById('ptspop');
+    el.innerHTML = '<span></span>'; el.firstChild.textContent = '+' + fmt(p);
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  }
   function renderStats(bumpScore) {
+    const mEl = document.getElementById('mult');
+    if (mEl) mEl.textContent = mult(nColors) > 1 ? '×' + mult(nColors) : '';
     elScore.textContent = fmt(score);
     elMoves.textContent = moves;
     if (mode === 'timed') {
@@ -1425,21 +1529,21 @@ tr.cur td { font-weight: 700; }
     if (bumpScore) { elScore.classList.remove('bump'); void elScore.offsetWidth; elScore.classList.add('bump'); }
   }
 
-  function tally(m, p) {
+  function tally(m, p, ln) {
     const k = String(nColors);
     totals[k] = totals[k] || { moves: 0, points: 0 };
-    totals[k].moves += m; totals[k].points += p;
+    totals[k].moves += m; totals[k].points += p; totals[k].lines = (totals[k].lines || 0) + (ln || 0);
     try { localStorage.setItem(LOGKEY, JSON.stringify(totals)); } catch (e) {}
     if (p) renderLog();
   }
 
   function renderLog() {
     const keys = Object.keys(totals).filter(k => totals[k].moves > 0).sort((a, b) => a - b);
-    if (!keys.length) { logBody.innerHTML = '<p class="empty">Play a few games at different colour counts and the totals collect here, so you can compare how many moves each 1,000 points cost.</p>'; return; }
-    let h = '<table><thead><tr><th>Colours</th><th>Points</th><th>Moves</th><th>Moves / 1000</th></tr></thead><tbody>';
+    if (!keys.length) { logBody.innerHTML = '<p class="empty">Play a few games at different colour counts and the totals collect here, so you can compare how many moves each line costs.</p>'; return; }
+    let h = '<table><thead><tr><th>Colours</th><th>Lines</th><th>Moves</th><th>Moves / line</th></tr></thead><tbody>';
     keys.forEach(k => {
       const t = totals[k];
-      h += '<tr' + (k === String(nColors) ? ' class="cur"' : '') + '><td>' + k + '</td><td>' + fmt(t.points) + '</td><td>' + t.moves + '</td><td>' + (t.points ? (t.moves / t.points).toFixed(1) : '–') + '</td></tr>';
+      h += '<tr' + (k === String(nColors) ? ' class="cur"' : '') + '><td>' + k + '</td><td>' + (t.lines || 0) + '</td><td>' + t.moves + '</td><td>' + (t.lines ? (t.moves / t.lines).toFixed(1) : '–') + '</td></tr>';
     });
     logBody.innerHTML = h + '</tbody></table>';
   }
@@ -1468,6 +1572,9 @@ tr.cur td { font-weight: 700; }
     if (d[0] >= 0 && d[0] < N && d[1] >= 0 && d[1] < N) move(d[0] * N + d[1]);
   });
 
+  const startL2Box = document.getElementById('startl2');
+  try { startL2Box.checked = localStorage.getItem('slide4-startl2') === '1'; } catch (e) {}
+  startL2Box.addEventListener('change', () => { try { localStorage.setItem('slide4-startl2', startL2Box.checked ? '1' : '0'); } catch (e) {} newGame(); });
   sel.addEventListener('change', newGame);
   modeSel.addEventListener('change', newGame);
   document.getElementById('again').addEventListener('click', () => { unlockSpeech(); newGame(); });
@@ -1499,7 +1606,7 @@ tr.cur td { font-weight: 700; }
     spTimed.setAttribute('aria-pressed', String(m === 'timed'));
     spNote.textContent = m === 'timed'
       ? 'One minute on the clock. Lines add time, and a colour joins every two minutes.'
-      : 'No clock. Play at your own pace with ' + (testBox.checked ? sel.value : 7) + ' colours.';
+      : 'No clock. You start with ' + (testBox.checked ? sel.value : 6) + ' colours, and another joins every 15,000 points.';
   }
   spFree.addEventListener('click', () => setSpMode('free'));
   spTimed.addEventListener('click', () => setSpMode('timed'));
@@ -1519,7 +1626,7 @@ tr.cur td { font-weight: 700; }
       li.children[0].textContent = (i + 1) + '.';
       li.children[1].textContent = e.n || '···';
       li.children[2].textContent = fmt(e.s);
-      li.children[3].textContent = e.c ? e.c + ' colours' : '';
+      li.children[3].textContent = e.r === 2 ? ((e.l === 2 ? '6×6 · ' : '') + (e.c ? e.c + ' colours' : '')) : 'old scoring';
       li.children[4].textContent = fmtDate(e.t);
       hsList.appendChild(li);
     });
@@ -1537,7 +1644,7 @@ tr.cur td { font-weight: 700; }
   document.getElementById('sp-play').addEventListener('click', () => {
     unlockSpeech(); if (soundBox.checked) audio(); wantMusic();
     modeSel.value = spMode;
-    if (!testBox.checked && spMode === 'free') sel.value = '7';
+    if (!testBox.checked && spMode === 'free') sel.value = '6';
     newGame();
     hideSplash();
   });
@@ -1554,16 +1661,16 @@ tr.cur td { font-weight: 700; }
   const DEMO_START = [1,2,3,4,5, 3,4,1,6,2, 0,0,0,null,3, 2,6,4,0,1, 4,1,2,5,6];
   const DEMO_NEW = [5, 3, 6, 2];
   const demoTiles = [];
-  for (let i = 0; i < N * N; i++) {
-    const sl = document.createElement('div'); sl.className = 'slot'; sl.style.transform = pos(i); sl.innerHTML = '<i></i>'; demo.appendChild(sl);
+  for (let i = 0; i < 25; i++) {
+    const sl = document.createElement('div'); sl.className = 'slot'; sl.style.transform = pos(i, 5); sl.innerHTML = '<i></i>'; demo.appendChild(sl);
   }
-  for (let i = 0; i < N * N; i++) {
+  for (let i = 0; i < 25; i++) {
     if (DEMO_START[i] === null) continue;
     const el = document.createElement('div'); el.className = 'tile';
     const b = document.createElement('b'); el.appendChild(b); demo.appendChild(el);
     demoTiles.push({ home: i, el, b });
   }
-  const tapEl = document.createElement('div'); tapEl.className = 'tap'; tapEl.style.transform = pos(18); demo.appendChild(tapEl);
+  const tapEl = document.createElement('div'); tapEl.className = 'tap'; tapEl.style.transform = pos(18, 5); demo.appendChild(tapEl);
   const plusEl = document.createElement('div'); plusEl.className = 'plus'; plusEl.innerHTML = '<span>+1,000</span>'; demo.appendChild(plusEl);
   let demoTimers = [];
   const later = (ms, fn) => demoTimers.push(setTimeout(fn, ms));
@@ -1571,7 +1678,7 @@ tr.cur td { font-weight: 700; }
     demoTiles.forEach(t => {
       t.el.classList.remove('match', 'grow');
       t.el.style.transition = 'none';
-      t.el.style.transform = pos(t.home);
+      t.el.style.transform = pos(t.home, 5);
       t.b.style.setProperty('--c', PALETTE[DEMO_START[t.home]]);
       void t.el.offsetWidth; t.el.style.transition = '';
     });
@@ -1582,7 +1689,7 @@ tr.cur td { font-weight: 700; }
     demoCap.textContent = 'Tap a tile next to the gap';
     const mover = demoTiles.find(t => t.home === 18);
     later(900, () => { tapEl.classList.remove('show'); void tapEl.offsetWidth; tapEl.classList.add('show'); });
-    later(1250, () => { mover.el.style.transform = pos(13); demoCap.textContent = 'It slides in'; });
+    later(1250, () => { mover.el.style.transform = pos(13, 5); demoCap.textContent = 'It slides in'; });
     later(1750, () => {
       demoCap.textContent = 'Four in a row scores';
       [10, 11, 12].map(h => demoTiles.find(t => t.home === h)).concat([mover]).forEach(t => t.el.classList.add('match'));
@@ -1598,13 +1705,16 @@ tr.cur td { font-weight: 700; }
   function demoStart() { demoStop(); demoRun(); }
   function demoStop() { demoTimers.forEach(clearTimeout); demoTimers = []; }
 
-  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over }));
+  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung }));
 
   function start(data) {
-    if (data && data.cols && data.cols.length === N * N && !data.over) {
+    if (data && data.cols && !data.over && data.cols.length === (data.N || 5) * (data.N || 5)) {
+      N = data.N || 5; level = data.level || 1; buildWells();
       mode = data.mode || 'free'; modeSel.value = mode;
       nColors = data.nColors; sel.value = String(nColors); sel.disabled = mode === 'timed';
       score = data.score || 0; moves = data.moves || 0;
+      freeBase = data.freeBase || nColors; freeNextAt = data.freeNextAt || 15 * mult(nColors);
+      rung = typeof data.rung === 'number' ? data.rung : Math.max(0, LADDER.findIndex(([l, c]) => l === level && c === nColors));
       timeLeft = data.timeLeft ?? T_MAX; elapsed = data.elapsed || 0; bestAtStart = best;
       timebar.hidden = mode !== 'timed';
       build(data.cols, data.hole);

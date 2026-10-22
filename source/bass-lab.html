@@ -1,0 +1,526 @@
+<title>Bass Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one column workbench. Transport and now-playing on top, the bar's notes as a piano roll, controls, then the lick library and history. */
+:root {
+  --bg: #eceee8; --panel: #dfe2da; --well: #cfd3c9; --fg: #1c2320; --muted: #5a645d; --line: #c9cec4;
+  --chord: #2f7fe0; --scale: #8b958d; --chrom: #e0602b; --appr: #8a5ad6; --beat: rgba(28,35,32,0.18);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141715; --panel: #1f2421; --well: #2a302c; --fg: #e7ebe5; --muted: #96a198; --line: #2e3531;
+    --chord: #5b9cf0; --scale: #6f7a72; --chrom: #f07a45; --appr: #a985e8; --beat: rgba(231,235,229,0.16); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141715; --panel: #1f2421; --well: #2a302c; --fg: #e7ebe5; --muted: #96a198; --line: #2e3531;
+  --chord: #5b9cf0; --scale: #6f7a72; --chrom: #f07a45; --appr: #a985e8; --beat: rgba(231,235,229,0.16); color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.9rem; letter-spacing: -0.02em; }
+h2 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; }
+button, select {
+  font: inherit; font-size: 0.92rem; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 11px; cursor: pointer;
+}
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+#play { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 700; padding: 10px 22px; font-size: 1rem; }
+.now { background: var(--panel); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.nowtop { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.chord { font-family: var(--font-num); font-weight: 700; font-size: 1.6rem; }
+.lick { font-size: 0.95rem; }
+.lick b { font-weight: 600; }
+.tag { display: inline-block; font-family: var(--font-num); font-size: 0.72rem; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
+.barno { font-family: var(--font-num); font-size: 0.8rem; color: var(--muted); }
+.roll { width: 100%; height: auto; display: block; background: var(--well); border-radius: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.78rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.ctrls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+@media (max-width: 460px) { .ctrls { grid-template-columns: 1fr; } }
+.ctrl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ctrl label { font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; }
+.ctrl label span { font-family: var(--font-num); color: var(--fg); }
+.ctrl input[type=range] { width: 100%; accent-color: var(--fg); }
+.ctrl .hint { font-size: 0.74rem; color: var(--muted); line-height: 1.35; }
+.toggles { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.9rem; align-items: center; }
+.toggles label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.toggles input { width: 17px; height: 17px; accent-color: var(--fg); margin: 0; }
+.lib { display: flex; flex-direction: column; gap: 14px; }
+.group h3 { margin: 0 0 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.row input { width: 17px; height: 17px; accent-color: var(--fg); margin: 0; }
+.row .nm { font-size: 0.92rem; min-width: 0; }
+.row .nm small { display: block; color: var(--muted); font-size: 0.76rem; margin-top: 1px; }
+.row.off .nm { opacity: 0.45; text-decoration: line-through; }
+.row.cur { background: color-mix(in srgb, var(--chord) 12%, transparent); }
+.row button { padding: 4px 9px; font-size: 0.8rem; }
+.hist { display: flex; flex-direction: column; font-family: var(--font-num); font-size: 0.8rem; }
+.hist div { display: grid; grid-template-columns: 2.4rem 4.2rem 1fr auto; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.hist .ap { color: var(--muted); }
+.out { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.out textarea { width: 100%; font-family: var(--font-num); font-size: 0.72rem; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical; }
+.note { font-size: 0.85rem; color: var(--muted); line-height: 1.45; margin: 0; max-width: 62ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Bass Lab</h1>
+    <button id="play" type="button">Play</button>
+  </header>
+  <p class="note">The Slide 4 groove with the bass soloing over every bar, built from named licks. Ban the ones that sound wrong, raise or lower the chromatic spice, and copy the result back to Claude.</p>
+
+  <section class="now" aria-live="polite">
+    <div class="nowtop">
+      <span class="chord" id="chord">Am9</span>
+      <span class="barno" id="barno">bar –</span>
+    </div>
+    <div class="lick" id="lick">Press Play.</div>
+    <svg class="roll" id="roll" viewBox="0 0 640 260" preserveAspectRatio="none" role="img" aria-label="Notes of the current bar"></svg>
+    <div class="legend">
+      <span><i style="background:var(--chord)"></i>chord tone</span>
+      <span><i style="background:var(--scale)"></i>scale tone</span>
+      <span><i style="background:var(--chrom)"></i>chromatic</span>
+      <span><i style="background:var(--appr)"></i>approach to next chord</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Controls</h2>
+    <div class="ctrls">
+      <div class="ctrl">
+        <label for="chroma">Chromatic spice <span id="chromav"></span></label>
+        <input type="range" id="chroma" min="0" max="100" step="5">
+        <div class="hint">0: pentatonic and funk licks only, approaches by scale step or fifth. Higher: more blues and bebop licks and half-step approaches.</div>
+      </div>
+      <div class="ctrl">
+        <label for="density">Density <span id="densityv"></span></label>
+        <input type="range" id="density" min="20" max="100" step="5">
+        <div class="hint">Lower drops notes from licks and leaves more air.</div>
+      </div>
+      <div class="ctrl">
+        <label for="tempo">Tempo <span id="tempov"></span></label>
+        <input type="range" id="tempo" min="80" max="130" step="1">
+      </div>
+      <div class="ctrl">
+        <label for="swing">Swing <span id="swingv"></span></label>
+        <input type="range" id="swing" min="0" max="30" step="1">
+      </div>
+      <div class="ctrl">
+        <label for="form">Form</label>
+        <select id="form">
+          <option value="solo">Bass solo on every bar</option>
+          <option value="game">Like the game: 8 bars groove, 8 bars solo</option>
+          <option value="alt">Alternate: groove bar, solo bar</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label for="loop">Chord</label>
+        <select id="loop">
+          <option value="all">Whole progression</option>
+          <option value="min">Loop Am9 only</option>
+          <option value="maj">Loop Fmaj9 – G6</option>
+          <option value="dom">Loop E7♯9 – Am9</option>
+        </select>
+      </div>
+    </div>
+    <div class="toggles" style="margin-top:12px">
+      <label for="drums"><input type="checkbox" id="drums"> Drums</label>
+      <label for="pads"><input type="checkbox" id="pads"> Pads</label>
+      <label for="phrase"><input type="checkbox" id="phrase"> Keep phrase ends simple (no bebop in bars 4 and 8)</label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Last bars</h2>
+    <div class="hist" id="hist"></div>
+  </section>
+
+  <section>
+    <h2>Lick library</h2>
+    <div class="lib" id="lib"></div>
+  </section>
+
+  <section>
+    <h2>Send to Claude</h2>
+    <p class="note">Copies your settings and which licks you kept or banned, so they can go into the game.</p>
+    <div class="out" style="margin-top:8px">
+      <button id="copy" type="button">Copy settings</button>
+      <button id="reset" type="button">Reset to defaults</button>
+      <textarea id="outtext" rows="3" readonly aria-label="Settings to send"></textarea>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // ---------- Harmony ----------
+  // tones: chord tones relative to the root. sev: the seventh used by major licks (maj7 on F, b7 on G).
+  const CHORDS = {
+    Am9:  { pc: 9, q: 'min', tones: [0, 3, 7, 10, 14], name: 'Am9' },
+    Dm9:  { pc: 2, q: 'min', tones: [0, 3, 7, 10, 14], name: 'Dm9' },
+    Fmaj9:{ pc: 5, q: 'maj', sev: 11, tones: [0, 4, 7, 11, 14], name: 'Fmaj9' },
+    G6:   { pc: 7, q: 'maj', sev: 10, tones: [0, 4, 7, 9, 10], name: 'G6' },
+    E7s9: { pc: 4, q: 'dom', tones: [0, 4, 7, 10, 15], name: 'E7♯9' }
+  };
+  const PADS = { Am9: [55, 59, 60, 64], Dm9: [53, 57, 60, 64], Fmaj9: [57, 60, 64, 67], G6: [55, 59, 62, 64], E7s9: [56, 62, 67, 71] };
+  const GROOVE_ROOT = { Am9: 33, Dm9: 38, Fmaj9: 29, G6: 31, E7s9: 28 };
+  const KEY = [9, 11, 0, 2, 4, 5, 7];                 // A natural minor
+  const PROGS = {
+    all: ['Am9', 'Am9', 'Dm9', 'Dm9', 'Fmaj9', 'G6', 'Am9', 'E7s9'],
+    min: ['Am9', 'Am9', 'Am9', 'Am9'],
+    maj: ['Fmaj9', 'G6', 'Fmaj9', 'G6'],
+    dom: ['E7s9', 'Am9', 'E7s9', 'Am9']
+  };
+
+  // ---------- Lick library ----------
+  // notes: [16th step, interval from the chord root ('A' = approach to the next chord, 'S' = the chord's seventh), length in 16ths, articulation]
+  // articulation: T thumb, P pop, F fingered, G ghost
+  const LICKS = [
+    // minor chords (Am9, Dm9)
+    { id: 'm-octave', q: 'min', style: 'funk', name: 'Octave groove', desc: 'Root, octave pops, walks down the pentatonic',
+      n: [[0,0,2,'T'],[2,12,1,'P'],[3,0,1,'G'],[4,10,2,'P'],[6,7,1,'T'],[7,0,1,'G'],[8,0,2,'T'],[10,12,1,'P'],[11,10,1,'P'],[12,7,2,'T'],[14,5,1,'T'],[15,'A',1,'T']] },
+    { id: 'm-climb', q: 'min', style: 'pent', name: 'Pentatonic climb', desc: 'Up the minor pentatonic to the octave and back',
+      n: [[0,0,2,'T'],[2,3,1,'T'],[3,5,1,'T'],[4,7,2,'P'],[6,10,2,'P'],[8,12,3,'P'],[11,10,1,'P'],[12,7,2,'T'],[14,'A',2,'T']] },
+    { id: 'm-stabs', q: 'min', style: 'funk', name: 'Sparse stabs', desc: 'Lots of air, octave stabs',
+      n: [[0,0,1,'T'],[1,0,1,'G'],[2,12,1,'P'],[6,0,1,'T'],[7,12,1,'P'],[10,10,2,'P'],[12,7,2,'T'],[14,12,2,'P']] },
+    { id: 'm-dorian', q: 'min', style: 'funk', name: 'Dorian sixth', desc: 'Uses the bright major sixth, ends on the ninth',
+      n: [[0,0,2,'T'],[2,7,1,'P'],[3,9,1,'P'],[4,10,2,'P'],[6,12,2,'P'],[8,0,1,'T'],[9,0,1,'G'],[10,12,2,'P'],[12,14,2,'P'],[14,12,1,'P'],[15,10,1,'P']] },
+    { id: 'm-bluesdrop', q: 'min', style: 'blues', name: 'Blues scale drop', desc: 'Fast fall through the flat five on a weak 16th',
+      n: [[0,12,1,'P'],[1,10,1,'P'],[2,7,1,'F'],[3,6,1,'F'],[4,5,1,'F'],[5,3,1,'F'],[6,0,2,'T'],[8,0,1,'T'],[9,0,1,'G'],[10,12,1,'P'],[11,0,1,'G'],[12,3,1,'T'],[13,5,1,'T'],[14,'A',2,'T']] },
+    { id: 'm-answer', q: 'min', style: 'blues', name: 'Call and answer', desc: 'High call, low answer climbing to the fifth',
+      n: [[0,7,1,'P'],[1,10,1,'P'],[2,12,2,'P'],[4,10,1,'P'],[5,7,2,'T'],[8,0,2,'T'],[10,0,1,'G'],[11,3,1,'T'],[12,5,1,'T'],[13,6,1,'F'],[14,7,2,'T']] },
+    { id: 'm-bebop', q: 'min', style: 'bebop', name: 'Bebop minor line', desc: 'Eighths down the scale, chord tones on every beat',
+      n: [[0,12,2,'F'],[2,10,2,'F'],[4,7,2,'F'],[6,5,2,'F'],[8,3,2,'F'],[10,2,2,'F'],[12,0,2,'F'],[14,'A',2,'F']] },
+    { id: 'm-enclose', q: 'min', style: 'bebop', name: 'Enclosure to the fifth', desc: 'Circles the fifth from above and below, lands on beat 3',
+      n: [[0,0,2,'T'],[2,3,2,'P'],[4,5,2,'T'],[6,9,1,'F'],[7,6,1,'F'],[8,7,4,'T'],[12,10,2,'P'],[14,'A',2,'T']] },
+    // major chords (Fmaj9, G6)
+    { id: 'M-arp', q: 'maj', style: 'arp', name: 'Arpeggio up', desc: 'Root, fifth, seventh, octave, ninth, tenth',
+      n: [[0,0,2,'T'],[2,7,1,'P'],[3,'S',1,'P'],[4,12,2,'P'],[6,14,2,'P'],[8,16,1,'P'],[9,14,1,'P'],[10,12,2,'P'],[12,7,2,'T'],[14,'A',2,'T']] },
+    { id: 'M-octave', q: 'maj', style: 'funk', name: 'Octave funk', desc: 'Octave pops with the seventh as a pickup',
+      n: [[0,0,2,'T'],[2,12,1,'P'],[3,0,1,'G'],[4,7,2,'T'],[6,12,1,'P'],[7,'S',1,'P'],[8,12,2,'P'],[10,7,2,'T'],[12,4,2,'T'],[14,'A',2,'T']] },
+    { id: 'M-pent', q: 'maj', style: 'pent', name: 'Major pentatonic run', desc: 'Sunny run up to the octave and down',
+      n: [[0,0,1,'T'],[1,2,1,'F'],[2,4,1,'F'],[3,7,1,'F'],[4,9,2,'P'],[6,12,2,'P'],[8,9,1,'P'],[9,7,1,'F'],[10,4,2,'T'],[12,2,1,'T'],[13,0,1,'T'],[14,'A',2,'T']] },
+    { id: 'M-sixth', q: 'maj', style: 'blues', name: 'Sixth slide', desc: 'Slides 5–♯5–6, the classic R&B move',
+      n: [[0,0,2,'T'],[2,0,1,'G'],[3,9,1,'P'],[4,12,2,'P'],[6,0,2,'T'],[8,7,1,'T'],[9,8,1,'F'],[10,9,2,'P'],[12,7,2,'T'],[14,4,2,'T']] },
+    { id: 'M-bebop', q: 'maj', style: 'bebop', name: 'Bebop major line', desc: 'Eighths up the scale, chord tones on the beats',
+      n: [[0,0,2,'F'],[2,2,2,'F'],[4,4,2,'F'],[6,5,2,'F'],[8,7,2,'F'],[10,9,2,'F'],[12,'S',2,'F'],[14,'A',2,'F']] },
+    // dominant (E7#9)
+    { id: 'D-bebop', q: 'dom', style: 'bebop', name: 'Bebop dominant', desc: 'Down the bebop scale: the major 7 passes on an offbeat',
+      n: [[0,12,2,'F'],[2,11,2,'F'],[4,10,2,'F'],[6,9,2,'F'],[8,7,2,'F'],[10,5,2,'F'],[12,4,2,'F'],[14,'A',2,'F']] },
+    { id: 'D-hendrix', q: 'dom', style: 'blues', name: '♯9 into the third', desc: 'The Hendrix-chord rub, resolved straight away',
+      n: [[0,0,2,'T'],[2,15,1,'P'],[3,16,1,'P'],[4,12,2,'P'],[6,10,2,'P'],[8,7,2,'T'],[10,4,2,'T'],[12,0,2,'T'],[14,'A',2,'T']] },
+    { id: 'D-arp', q: 'dom', style: 'arp', name: 'Dominant arpeggio', desc: 'Up through 3, 5, 7 and ♯9, back down',
+      n: [[0,0,1,'T'],[1,0,1,'G'],[2,4,1,'F'],[3,7,1,'F'],[4,10,2,'P'],[6,15,1,'P'],[7,16,1,'P'],[8,12,4,'P'],[12,10,1,'P'],[13,7,1,'T'],[14,4,1,'T'],[15,'A',1,'T']] },
+    { id: 'D-walk', q: 'dom', style: 'pent', name: 'Turnaround walk', desc: 'Quarter notes: root, third, fifth, approach',
+      n: [[0,0,4,'F'],[4,4,4,'F'],[8,7,4,'F'],[12,'A',4,'F']] }
+  ];
+  const STYLE_LABEL = { pent: 'pentatonic', funk: 'funk', arp: 'arpeggio', blues: 'blues', bebop: 'bebop' };
+
+  // ---------- Settings ----------
+  const DEFAULTS = { chroma: 20, density: 80, tempo: 106, swing: 22, form: 'solo', loop: 'all', drums: true, pads: true, phrase: true, banned: [] };
+  let S = Object.assign({}, DEFAULTS);
+  try { const v = JSON.parse(localStorage.getItem('basslab2') || 'null'); if (v) S = Object.assign({}, DEFAULTS, v); } catch (e) {}
+  const save = () => { try { localStorage.setItem('basslab2', JSON.stringify(S)); } catch (e) {} renderOut(); };
+  const $ = id => document.getElementById(id);
+  function bindRange(id, fmt) {
+    const el = $(id), out = $(id + 'v');
+    el.value = S[id]; out.textContent = fmt(S[id]);
+    el.addEventListener('input', () => { S[id] = +el.value; out.textContent = fmt(S[id]); save(); });
+  }
+  bindRange('chroma', v => v + '%');
+  bindRange('density', v => v + '%');
+  bindRange('tempo', v => v + ' bpm');
+  bindRange('swing', v => v + '%');
+  ['form', 'loop'].forEach(id => { $(id).value = S[id]; $(id).addEventListener('change', () => { S[id] = $(id).value; save(); }); });
+  ['drums', 'pads', 'phrase'].forEach(id => { $(id).checked = S[id]; $(id).addEventListener('change', () => { S[id] = $(id).checked; save(); }); });
+
+  // ---------- Lick library UI ----------
+  let forced = null;
+  const rows = {};
+  function renderLib() {
+    const lib = $('lib'); lib.innerHTML = '';
+    [['min', 'Minor chords (Am9, Dm9)'], ['maj', 'Major chords (Fmaj9, G6)'], ['dom', 'Dominant (E7♯9)']].forEach(([q, title]) => {
+      const g = document.createElement('div'); g.className = 'group';
+      const h = document.createElement('h3'); h.textContent = title; g.appendChild(h);
+      LICKS.filter(l => l.q === q).forEach(l => {
+        const r = document.createElement('div'); r.className = 'row' + (S.banned.includes(l.id) ? ' off' : '');
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !S.banned.includes(l.id); cb.id = 'lk-' + l.id;
+        cb.setAttribute('aria-label', 'Use ' + l.name);
+        cb.addEventListener('change', () => {
+          S.banned = S.banned.filter(x => x !== l.id); if (!cb.checked) S.banned.push(l.id);
+          r.classList.toggle('off', !cb.checked); save();
+        });
+        const nm = document.createElement('div'); nm.className = 'nm';
+        nm.innerHTML = '<span></span><span class="tag"></span><small></small>';
+        nm.children[0].textContent = l.name; nm.children[1].textContent = STYLE_LABEL[l.style]; nm.children[2].textContent = l.desc;
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Play next';
+        b.addEventListener('click', () => { forced = l.id; b.textContent = 'Queued'; setTimeout(() => { b.textContent = 'Play next'; }, 1500); if (!playing) start(); });
+        r.append(cb, nm, b); g.appendChild(r); rows[l.id] = r;
+      });
+      lib.appendChild(g);
+    });
+  }
+  renderLib();
+  function renderOut() {
+    const kept = LICKS.filter(l => !S.banned.includes(l.id)).map(l => l.id);
+    $('outtext').value = JSON.stringify({ basslab: 1, chroma: S.chroma, density: S.density, swing: S.swing, simplePhraseEnds: S.phrase, kept, banned: S.banned });
+  }
+  renderOut();
+  $('copy').addEventListener('click', () => {
+    const t = $('outtext');
+    try { navigator.clipboard.writeText(t.value).then(() => { $('copy').textContent = 'Copied'; setTimeout(() => { $('copy').textContent = 'Copy settings'; }, 1500); }, () => { t.focus(); t.select(); }); }
+    catch (e) { t.focus(); t.select(); }
+  });
+  $('reset').addEventListener('click', () => {
+    S = Object.assign({}, DEFAULTS, { banned: [] }); save();
+    ['chroma', 'density', 'tempo', 'swing'].forEach(id => { $(id).value = S[id]; $(id).dispatchEvent(new Event('input')); });
+    ['form', 'loop'].forEach(id => { $(id).value = S[id]; });
+    ['drums', 'pads', 'phrase'].forEach(id => { $(id).checked = S[id]; });
+    renderLib();
+  });
+
+  // ---------- Note choice ----------
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  function wpick(items, w) { let t = w.reduce((a, b) => a + b, 0), r = Math.random() * t; for (let i = 0; i < items.length; i++) { r -= w[i]; if (r <= 0) return items[i]; } return items[items.length - 1]; }
+  const rootIn = (pc, lo, hi) => { for (let m = lo; m <= hi; m++) if (m % 12 === pc) return m; return lo; };
+  function styleWeight(style, phraseEnd) {
+    const c = S.chroma / 100;
+    if (style === 'bebop') return (S.phrase && phraseEnd) ? 0 : 1.5 * c;
+    if (S.phrase && phraseEnd && (style === 'pent' || style === 'funk')) return 1.6;   // lay it down
+    if (style === 'blues') return 0.3 + 1.2 * c;
+    return 1;
+  }
+  function chooseLick(ch, phraseEnd) {
+    if (forced) { const f = LICKS.find(l => l.id === forced && l.q === ch.q); if (f) { forced = null; return f; } }
+    const pool = LICKS.filter(l => l.q === ch.q && !S.banned.includes(l.id));
+    if (!pool.length) return null;
+    const w = pool.map(l => styleWeight(l.style, phraseEnd));
+    if (w.every(x => x === 0)) return pick(pool);
+    return wpick(pool, w);
+  }
+  // Approach note into the next chord's root: chromatic (half step below/above), a scale step above, or the fifth.
+  function approach(prev, nextCh) {
+    const target = rootIn(nextCh.pc, 28, 39);
+    const c = S.chroma / 100;
+    const kind = wpick(['below', 'above', 'step', 'fifth'], [0.7 * c, 0.35 * c, 0.6 * (1 - c) + 0.1, 0.5 * (1 - c) + 0.1]);
+    let m;
+    if (kind === 'below') m = target - 1;
+    else if (kind === 'above') m = target + 1;
+    else if (kind === 'step') { m = target + 1; while (!KEY.includes(m % 12) && !(nextCh.q === 'dom' && m % 12 === 8)) m++; }
+    else m = target + 7 <= 46 ? target + 7 : target - 5;
+    return { m, kind };
+  }
+  function buildBar(ch, nextCh, phraseEnd) {
+    const lick = chooseLick(ch, phraseEnd);
+    if (!lick) return { lick: null, notes: [], ap: '' };
+    const root = rootIn(ch.pc, 28, 39);
+    const keep = S.density / 100;
+    const notes = []; let prev = root, apKind = '';
+    lick.n.forEach(([st, rel, len, art], i) => {
+      if (i > 0 && rel !== 'A' && st % 4 !== 0 && Math.random() > keep) return;   // thin out off-beat notes
+      let m, cls;
+      if (rel === 'A') { const a = approach(prev, nextCh); m = a.m; apKind = a.kind; cls = 'appr'; }
+      else {
+        const r = rel === 'S' ? ch.sev : rel;
+        m = root + r;
+        const pc = ((r % 12) + 12) % 12;
+        const chordPcs = ch.tones.map(t => t % 12);
+        const scalePc = ((ch.pc + pc) % 12);
+        cls = chordPcs.includes(pc) ? 'chord' : (KEY.includes(scalePc) || (ch.q === 'dom' && scalePc === 8)) ? 'scale' : 'chrom';
+      }
+      notes.push({ st, m, len, art, cls }); prev = m;
+    });
+    return { lick, notes, ap: apKind };
+  }
+
+  // ---------- Sound (same voices as the game) ----------
+  let ac = null, master, padBus, pulse50, noise;
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  function pulseWave(duty) {
+    const n = 40, re = new Float32Array(n), im = new Float32Array(n);
+    for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty);
+    return ac.createPeriodicWave(re, im);
+  }
+  function initAudio() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = 0.32;
+    const lofi = ac.createBiquadFilter(); lofi.type = 'lowpass'; lofi.frequency.value = 6500;
+    master.connect(lofi); lofi.connect(ac.destination);
+    padBus = ac.createBiquadFilter(); padBus.type = 'lowpass'; padBus.frequency.value = 1100; padBus.Q.value = 0.7; padBus.connect(master);
+    pulse50 = pulseWave(0.5);
+    noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const d = noise.getChannelData(0), hold = Math.max(1, Math.round(ac.sampleRate / 8000)); let v = 0;
+    for (let i = 0; i < d.length; i++) { if (i % hold === 0) v = Math.random() * 2 - 1; d[i] = v; }
+  }
+  function noiseHit(t, type, freq, vol, dur, q) {
+    const n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    n.buffer = noise; f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(f); f.connect(g); g.connect(master); n.start(t, Math.random() * 0.8); n.stop(t + dur + 0.01);
+  }
+  function kick(t, vol) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.26);
+  }
+  function snare(t, vol) {
+    noiseHit(t, 'bandpass', 1700, 0.5 * vol, 0.13, 0.7);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle'; o.frequency.value = 185;
+    g.gain.setValueAtTime(0.28 * vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.08);
+  }
+  function bass(m, t, dur, vol) {
+    vol = vol || 1;
+    const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+    o.setPeriodicWave(pulse50); o.frequency.value = hz(m);
+    f.type = 'lowpass'; f.Q.value = 3;
+    f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(380, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.34 * vol, t + 0.006);
+    g.gain.setValueAtTime(0.3 * vol, t + dur * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function pad(notes, t, dur, vol) {
+    notes.forEach((m, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = i % 2 ? 7 : -7;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.2);
+      g.gain.setValueAtTime(vol, t + dur - 0.05); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.15);
+      o.connect(g); g.connect(padBus); o.start(t); o.stop(t + dur + 0.2);
+    });
+  }
+  const GROOVE = { 0: 0, 2: 12, 3: 0, 6: 12, 8: 0, 10: 12, 11: 0, 13: 12, 14: 0 };
+
+  // ---------- Sequencer ----------
+  let playing = false, timer = null, nextTime = 0, step = 0, barData = null;
+  const shown = [];   // bars waiting to be shown when their time comes
+  function soloBar(bar) {
+    if (S.form === 'solo') return true;
+    if (S.form === 'alt') return bar % 2 === 1;
+    return Math.floor(bar / 8) % 2 === 1;
+  }
+  function schedule(st, t) {
+    const S16 = 60 / S.tempo / 4;
+    const prog = PROGS[S.loop] || PROGS.all;
+    const bar = Math.floor(st / 16), s = st % 16, bi = bar % prog.length;
+    const ch = CHORDS[prog[bi]], nextCh = CHORDS[prog[(bi + 1) % prog.length]];
+    if (s === 0) {
+      const solo = soloBar(bar);
+      const phraseEnd = prog.length >= 4 ? (bi % 4 === 3) : true;
+      barData = solo ? buildBar(ch, nextCh, phraseEnd) : { lick: null, notes: [], ap: '', groove: true };
+      barData.bar = bar; barData.ch = ch; barData.solo = solo;
+      shown.push({ time: t, data: barData });
+      if (S.pads) pad(PADS[prog[bi]], t, S16 * 16, 0.05);
+    }
+    if (S.drums) {
+      if (s === 0 || s === 6 || s === 8 || (bar % 2 && s === 11)) kick(t, s === 0 ? 0.9 : 0.75);
+      if (s === 4 || s === 12) snare(t, 1);
+      if (bar % 2 && s === 15) snare(t, 0.25);
+      if (s === 14) noiseHit(t, 'highpass', 6500, 0.12, 0.16);
+      else if (s !== 15) noiseHit(t, 'highpass', 7000, s % 2 ? 0.06 : 0.13, 0.035);
+    }
+    if (barData.solo) {
+      barData.notes.filter(n => n.st === s).forEach(n => {
+        if (n.art === 'G') bass(n.m, t, 0.045, 0.35);
+        else bass(n.m, t, Math.max(0.08, n.len * S16 * 0.95));
+      });
+    } else if (s in GROOVE) {
+      const r = s >= 14 ? GROOVE_ROOT[prog[(bi + 1) % prog.length]] : GROOVE_ROOT[prog[bi]];
+      bass(r + GROOVE[s], t, S16 * (s === 14 ? 1.8 : 0.85));
+    }
+  }
+  function tick() {
+    const S16 = 60 / S.tempo / 4, sw = S.swing / 100;
+    while (nextTime < ac.currentTime + 0.15) {
+      schedule(step, nextTime);
+      nextTime += S16 * (step % 2 ? 1 - sw : 1 + sw);
+      step++;
+    }
+  }
+  function start() {
+    initAudio();
+    playing = true; step = 0; nextTime = ac.currentTime + 0.1; shown.length = 0;
+    tick(); timer = setInterval(tick, 25);
+    $('play').textContent = 'Stop';
+    requestAnimationFrame(ui);
+  }
+  function stop() {
+    playing = false; clearInterval(timer); timer = null; $('play').textContent = 'Play';
+  }
+  $('play').addEventListener('click', () => playing ? stop() : start());
+  document.addEventListener('visibilitychange', () => { if (document.hidden && playing) stop(); });
+
+  // ---------- Display ----------
+  const history = [];
+  const NOTE = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+  const nm = m => NOTE[m % 12] + (Math.floor(m / 12) - 1);
+  const AP = { below: 'half step below', above: 'half step above', step: 'scale step', fifth: 'fifth' };
+  function drawRoll(d) {
+    const svg = $('roll'); const W = 640, H = 260, lo = 26, hi = 56;
+    const y = m => H - 8 - (m - lo) / (hi - lo) * (H - 16);
+    let h = '';
+    for (let s = 0; s <= 16; s++) h += '<line x1="' + (s * 40) + '" y1="0" x2="' + (s * 40) + '" y2="' + H + '" stroke="var(--beat)" stroke-width="' + (s % 4 === 0 ? 2 : 0.5) + '"/>';
+    const root = rootIn(d.ch.pc, 28, 39);
+    [root, root + 12, root + 24].forEach(m => { if (m <= hi) h += '<line x1="0" x2="' + W + '" y1="' + y(m) + '" y2="' + y(m) + '" stroke="var(--chord)" stroke-opacity="0.25" stroke-dasharray="4 6"/>'; });
+    d.notes.forEach(n => {
+      const col = n.cls === 'chord' ? 'var(--chord)' : n.cls === 'scale' ? 'var(--scale)' : n.cls === 'chrom' ? 'var(--chrom)' : 'var(--appr)';
+      const x = n.st * 40 + 2, w = Math.max(10, n.len * 40 - 4);
+      h += '<rect x="' + x + '" y="' + (y(n.m) - 7) + '" width="' + w + '" height="14" rx="4" fill="' + col + '"' + (n.art === 'G' ? ' fill-opacity="0.35"' : '') + '/>';
+      h += '<text x="' + (x + 4) + '" y="' + (y(n.m) - 10) + '" font-size="12" font-family="JetBrains Mono, monospace" fill="var(--fg)" opacity="0.75">' + nm(n.m) + '</text>';
+    });
+    if (!d.notes.length) h += '<text x="320" y="135" text-anchor="middle" font-size="16" fill="var(--fg)" opacity="0.5">groove bar</text>';
+    svg.innerHTML = h;
+  }
+  function showBar(d) {
+    $('chord').textContent = d.ch.name;
+    $('barno').textContent = 'bar ' + (d.bar + 1);
+    const lk = $('lick');
+    lk.innerHTML = '';
+    if (!d.solo) { lk.textContent = 'Groove (octave bass)'; }
+    else if (!d.lick) { lk.textContent = 'No lick enabled for this chord'; }
+    else {
+      const b = document.createElement('b'); b.textContent = d.lick.name; lk.appendChild(b);
+      const tg = document.createElement('span'); tg.className = 'tag'; tg.textContent = STYLE_LABEL[d.lick.style]; lk.appendChild(tg);
+      if (d.ap) lk.appendChild(document.createTextNode('  · approach: ' + AP[d.ap]));
+    }
+    Object.values(rows).forEach(r => r.classList.remove('cur'));
+    if (d.lick && rows[d.lick.id]) rows[d.lick.id].classList.add('cur');
+    drawRoll(d);
+    history.unshift(d); if (history.length > 8) history.pop();
+    const hs = $('hist'); hs.innerHTML = '';
+    history.forEach(x => {
+      const r = document.createElement('div');
+      r.innerHTML = '<span></span><span></span><span></span><span class="ap"></span>';
+      r.children[0].textContent = x.bar + 1;
+      r.children[1].textContent = x.ch.name;
+      r.children[2].textContent = x.solo ? (x.lick ? x.lick.name : '–') : 'groove';
+      r.children[3].textContent = x.ap ? AP[x.ap] : '';
+      hs.appendChild(r);
+    });
+  }
+  function ui() {
+    if (!playing) return;
+    while (shown.length && shown[0].time <= ac.currentTime) showBar(shown.shift().data);
+    requestAnimationFrame(ui);
+  }
+  // Static first frame: show an example bar so the page reads before Play.
+  drawRoll({ ch: CHORDS.Am9, notes: buildBar(CHORDS.Am9, CHORDS.Am9, false).notes });
+  $('lick').textContent = 'Press Play. The roll shows an example Am9 bar.';
+})();
+</script>
