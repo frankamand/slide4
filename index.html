@@ -388,7 +388,7 @@ tr.cur td { font-weight: 700; }
     <summary>Rules, voice and stats</summary>
     <div class="morebody">
       <div id="voiceslot"></div>
-  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Every colour above six adds 25% (×2 at ten colours). After ten colours the board grows to 6×6 with nine colours and climbs again to thirteen; the multiplier keeps rising (×3.25 at the top) and a line of six scores 6,000. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
+  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Every colour above six adds 25%. Instead of a tenth colour, the board grows to 6×6 with eight colours and climbs again to thirteen; the multiplier keeps rising (×3.25 at the top) and a line of six scores 6,000. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
   <p class="hint"><strong>Timed:</strong> you start with 6 colours and a one-minute bar that runs down. A line of 4 adds 5 seconds, a line of 5 adds 15. Every two minutes another colour joins, up to 10. The game ends when the bar runs out.</p>
 
   <section class="log">
@@ -547,12 +547,19 @@ tr.cur td { font-weight: 700; }
       VII6: { r: 31, pad: [55, 59, 62, 64], tones: [7, 11, 2, 4],    pc: 7, q: 'maj', sev: 10, st: [0, 4, 7, 9, 10] },  // G6
       V7s9: { r: 28, pad: [56, 62, 67, 71], tones: [4, 8, 2, 7, 11], pc: 4, q: 'dom', st: [0, 4, 7, 10, 15] },        // E7#9
       IV9:  { r: 38, pad: [54, 57, 60, 64], tones: [2, 6, 9, 0, 4],  pc: 2, q: 'dom', st: [0, 4, 7, 10, 14] },        // D9 (dorian IV)
-      v7:   { r: 28, pad: [55, 59, 62, 64], tones: [4, 7, 11, 2],    pc: 4, q: 'min', st: [0, 3, 7, 10] }            // Em7
+      v7:   { r: 28, pad: [55, 59, 62, 64], tones: [4, 7, 11, 2],    pc: 4, q: 'min', st: [0, 3, 7, 10] },           // Em7
+      // New wave: plainer, thinner voicings
+      i:      { r: 33, pad: [57, 60, 64],     tones: [9, 0, 4],      pc: 9, q: 'min', st: [0, 3, 7] },                  // Am
+      VImaj7: { r: 29, pad: [53, 57, 60, 64], tones: [5, 9, 0, 4],   pc: 5, q: 'maj', sev: 11, st: [0, 4, 7, 11] },     // Fmaj7
+      VII:    { r: 31, pad: [55, 59, 62],     tones: [7, 11, 2],     pc: 7, q: 'maj', sev: 10, st: [0, 4, 7] },         // G
+      Vsus:   { r: 28, pad: [52, 57, 59, 64], tones: [4, 9, 11],     pc: 4, q: 'sus', st: [0, 5, 7] },                  // Esus4
+      V:      { r: 28, pad: [52, 56, 59, 64], tones: [4, 8, 11],     pc: 4, q: 'maj', sev: 10, st: [0, 4, 7] }          // E
     };
-    // Scheme 1: the original. Scheme 2: 80s aeolian lift (bVI-bVII-i) with a dorian IV9.
+    // Scheme 1: the original funk harmony. Scheme 2: new wave harmony (Cure/Duran Duran flavour), same groove:
+    // the minor chord droning, modal lifts to bVI and bVII, no blues and no V7 resolution.
     const SCHEMES = [
-      ['i9', 'i9', 'iv9', 'iv9', 'VI', 'VII6', 'i9', 'V7s9'],
-      ['VI', 'VII6', 'i9', 'IV9', 'VI', 'VII6', 'v7', 'V7s9']
+      { style: 'funk', chords: ['i9', 'i9', 'iv9', 'iv9', 'VI', 'VII6', 'i9', 'V7s9'], pivot: 'V7s9' },
+      { style: 'wave', chords: ['i', 'i', 'VImaj7', 'VII', 'i', 'i', 'VImaj7', 'Vsus'], pivot: 'V' }
     ];
     // Keys in semitones from A minor: A, C, D, F minor. The key changes every second cycle.
     const KEYSHIFTS = [0, 3, 5, -4];
@@ -565,10 +572,11 @@ tr.cur td { font-weight: 700; }
     }
     function songFor(cycle) {
       const sh = keyShift(cycle), nsh = keyShift(cycle + 1);
-      const bars = SCHEMES[cycle % SCHEMES.length].map(n => chordAt(n, sh));
-      if (nsh !== sh) bars[7] = chordAt('V7s9', nsh);   // pivot: the new key's dominant leads into the modulation
+      const sc = SCHEMES[cycle % SCHEMES.length];
+      const bars = sc.chords.map(n => chordAt(n, sh));
+      if (nsh !== sh) bars[7] = chordAt(sc.pivot, nsh);   // pivot: the new key's dominant leads into the modulation
       const tonic = (9 + sh + 12) % 12;
-      return { bars, pent: [0, 3, 5, 7, 10].map(i => (tonic + i) % 12), keyPcs: [0, 2, 3, 5, 7, 8, 10].map(i => (tonic + i) % 12), lead: (tonic + 11) % 12 };
+      return { style: sc.style, bars, pent: [0, 3, 5, 7, 10].map(i => (tonic + i) % 12), keyPcs: [0, 2, 3, 5, 7, 8, 10].map(i => (tonic + i) % 12), lead: (tonic + 11) % 12 };
     }
     let song = songFor(0), songCycle = 0;
     const BASS = { 0: 0, 2: 12, 3: 0, 6: 12, 8: 0, 10: 12, 11: 0, 13: 12, 14: 0 };
@@ -631,6 +639,7 @@ tr.cur td { font-weight: 700; }
       leadShaper = ac.createWaveShaper(); leadShaper.curve = driveCurve(6);
       leadClean = ac.createGain(); leadDrive = ac.createGain(); leadDrive.gain.value = 0;
       leadLP = ac.createBiquadFilter(); leadLP.type = 'lowpass'; leadLP.frequency.value = 3200; leadLP.Q.value = 3;
+
       const echo = ac.createDelay(1); echo.delayTime.value = S16 * 3;
       const fb = ac.createGain(); fb.gain.value = 0.3;
       const wet = ac.createGain(); wet.gain.value = 0.28;
@@ -818,14 +827,18 @@ tr.cur td { font-weight: 700; }
     }
 
     function schedule(st, t) {
-      // Sections of 8 bars: groove, lead solo, lead solo, bass solo, breakdown.
-      const bar = Math.floor(st / 16), s = st % 16, bi = bar % 8, sec = Math.floor(bar / 8) % 5;
-      // A cycle is all five sections (40 bars); then the chord scheme changes, and every second cycle the key.
-      const cycle = Math.floor(bar / 40);
+      // Funk pass: 40 bars in sections of 8 (groove, lead solo, lead solo, bass solo, breakdown).
+      // New wave pass: 16 bars, same rhythm and instruments, new harmony (groove, then one lead solo).
+      // The key changes after each funk + new wave pair.
+      const bar = Math.floor(st / 16), s = st % 16, bi = bar % 8;
+      const inPair = bar % 56, cycle = Math.floor(bar / 56) * 2 + (inPair >= 40 ? 1 : 0);
+      const local = inPair >= 40 ? inPair - 40 : inPair, sec = Math.floor(local / 8);
       if (cycle !== songCycle) { song = songFor(cycle); songCycle = cycle; }
+      const wave = song.style === 'wave';
+      const lastBar = local === (wave ? 15 : 39);
       const B = song.bars[bi];
-      const NB = (sec === 4 && bi === 7) ? songFor(cycle + 1).bars[0] : song.bars[(bi + 1) % 8];
-      const brk = sec === 4, soloOn = sec === 1 || sec === 2, bassSolo = sec === 3;
+      const NB = lastBar ? songFor(cycle + 1).bars[0] : song.bars[(bi + 1) % 8];
+      const brk = !wave && sec === 4, soloOn = wave ? sec === 1 : (sec === 1 || sec === 2), bassSolo = !wave && sec === 3;
       // Drums
       if (!brk && (s === 0 || s === 6 || s === 8 || (bar % 2 && s === 11))) kick(t, s === 0 ? 0.9 : 0.75);
       if (s === 4 || s === 12) snare(t, brk ? 0.5 : 1);
@@ -843,6 +856,7 @@ tr.cur td { font-weight: 700; }
       if (s === 0) barNotes = soloOn ? phrase(bar, B) : {};
       if (barNotes[s]) lead(barNotes[s][0], t, barNotes[s][1] * S16);
     }
+
 
     function tick() {
       while (nextTime < ac.currentTime + 0.15) {
@@ -1236,8 +1250,9 @@ tr.cur td { font-weight: 700; }
   let freeBase = 7; // free play: starting colours
   let freeNextAt = 15; // free play: score (in thousands) at which the next colour joins
   // Inflation: each colour above six adds 25% to every line's points.
-  // Difficulty ladder: [level, colours]. Level 1 is 5x5 (6-10 colours); level 2 is 6x6 (9-13 colours).
-  const LADDER = [[1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13]];
+  // Difficulty ladder: [level, colours]. Level 1 is 5x5 (6-9 colours); instead of a tenth colour the board
+  // grows to 6x6 with 8 colours (level 2), which climbs to 13.
+  const LADDER = [[1, 6], [1, 7], [1, 8], [1, 9], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13]];
   let level = 1, rung = 0, pendingRung = -1;
   const multFor = (lv, n) => lv === 1 ? 1 + 0.25 * Math.max(0, n - 6) : 2 + 0.25 * (n - 8);
   const mult = n => multFor(level, n);
@@ -1403,9 +1418,9 @@ tr.cur td { font-weight: 700; }
     const startL2 = document.getElementById('startl2').checked && document.body.classList.contains('test');
     N = startL2 ? 6 : 5; level = startL2 ? 2 : 1; pendingRung = -1;
     buildWells();
-    if (startL2) { rung = 5; sel.value = '9'; }
+    if (startL2) { rung = 4; sel.value = '8'; }
     nColors = parseInt(sel.value, 10);
-    if (!startL2) { rung = LADDER.findIndex(([l, c]) => l === 1 && c === nColors); if (rung < 0) rung = nColors < 6 ? -1 : 4; }
+    if (!startL2) { rung = LADDER.findIndex(([l, c]) => l === 1 && c === nColors); if (rung < 0) rung = nColors < 6 ? -1 : 3; }
     freeBase = nColors; freeNextAt = 15 * mult(nColors);
     const cols = Array(N * N).fill(null);
     const h = N * N - 1;
