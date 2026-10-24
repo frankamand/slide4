@@ -75,10 +75,12 @@ body:not(.test) .testonly { display: none !important; }
 .wheel.cur .ch { border-color: var(--fg); }
 .initials .play { padding: 10px 28px; font-weight: 700; }
 .ver {
-  position: fixed; z-index: 40; pointer-events: none;
+  position: fixed; z-index: 40; pointer-events: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  padding: 6px 2px 10px 18px; margin: -6px 0 0 0;
   top: calc(env(safe-area-inset-top, 0px) + 3px); right: max(8px, env(safe-area-inset-right, 0px));
   font-family: var(--font-num); font-size: 10px; color: var(--muted); letter-spacing: 0.02em;
 }
+body:has(#splash:not([hidden])) .ver { pointer-events: auto; }   /* tappable on the start screen only */
 .formtest { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .formtest span { font-size: 0.82rem; color: var(--muted); }
 .overbtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
@@ -139,6 +141,7 @@ button.play { background: var(--fg); color: var(--bg); border-color: var(--fg); 
 .statcopy p { font-family: var(--font-body) !important; font-size: 0.85rem; }
 .statcopy textarea { width: 100%; font-family: var(--font-num); font-size: 0.7rem; background: var(--tray); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; resize: none; }
 .sp-test { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.9rem; cursor: pointer; padding-top: 6px; border-top: 1px solid var(--line); padding-block: 14px 0; }
+body:not(.dev) .sp-test { display: none; }
 .sp-test input { width: 18px; height: 18px; accent-color: var(--fg); margin: 0; }
 .sp-test span { color: var(--muted); font-size: 0.8rem; flex-basis: 100%; padding-left: 26px; }
 @media (prefers-reduced-motion: reduce) { .demo .tile { transition-duration: 1ms; } }
@@ -464,7 +467,7 @@ tr.cur td { font-weight: 700; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v1.7';
+  const APP_VERSION = 'v1.8';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1818,6 +1821,25 @@ tr.cur td { font-weight: 700; }
   spFree.addEventListener('click', () => setSpMode('free'));
   spTimed.addEventListener('click', () => setSpMode('timed'));
   testBox.addEventListener('change', () => setSpMode(spMode));
+  // Test mode is hidden; five quick taps on the version label (or ?test in the address) reveal it
+  const verEl = document.getElementById('ver');
+  let dev = false;
+  try { dev = localStorage.getItem('slide4-dev') === '1' || /[?&]test\b/.test(location.search); } catch (e) {}
+  function applyDev() {
+    document.body.classList.toggle('dev', dev);
+    verEl.textContent = APP_VERSION + (dev ? ' · test' : '');
+    if (!dev && testBox.checked) { testBox.checked = false; testBox.dispatchEvent(new Event('change')); }
+  }
+  applyDev();
+  let verTaps = [];
+  verEl.addEventListener('click', () => {
+    const t = performance.now();
+    verTaps = verTaps.filter(x => t - x < 2500); verTaps.push(t);
+    if (verTaps.length < 5) return;
+    verTaps = []; dev = !dev;
+    try { localStorage.setItem('slide4-dev', dev ? '1' : '0'); } catch (e) {}
+    applyDev();
+  });
   const fmtDate = t => { try { return t ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; } catch (e) { return ''; } };
   function renderScores() {
     hsList.innerHTML = '';
