@@ -15,3 +15,6 @@ If fonts, icons or scripts change, also raise `VERSION` in `sw.js`.
 - High scores are stored per device in the browser.
 - `js/samjs.min.js` is sam-js, a reverse-engineered port of the 1982 C64 speech program SAM; see `js/samjs-README.md` for its licence notes before any commercial release.
 - Fonts: Bricolage Grotesque and JetBrains Mono (SIL Open Font License), from Fontsource.
+
+## Copyright
+© 2026 Frank Amand. All rights reserved. The code, music and graphics of Slide 4 may not be copied, modified or redistributed without permission. Third-party parts keep their own licences (see Notes).
