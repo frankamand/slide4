@@ -220,6 +220,9 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
 .tile b { display: flex; align-items: center; justify-content: center; }
 .tile b svg { width: 56%; height: 56%; fill: var(--ink, rgba(255,255,255,0.88)); filter: drop-shadow(0 1px 0 rgba(0,0,0,0.15)); }
 .board:not(.pimp) .tile b svg { display: none; }
+.board .tile.stone b svg { display: block; }
+.tile.stone b { background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 60%); }
+.demo .tile b svg { width: 56%; height: 56%; }
 .opts { display: flex; gap: 18px; flex-wrap: wrap; margin-top: -6px; }
 .opts label { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; }
 .opts input { width: 18px; height: 18px; accent-color: var(--fg); margin: 0; }
@@ -253,6 +256,13 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
 }
 .ptspop span { font-family: var(--font-num); font-weight: 700; font-size: 1rem; background: var(--fg); color: var(--bg); padding: 3px 10px; border-radius: 8px; }
 .ptspop.pop { animation: ptspop 1.1s ease-out; }
+.timepop { position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; }
+.timepop span {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(2.6rem, 15vw, 4rem); letter-spacing: -0.02em;
+  color: var(--time); -webkit-text-stroke: 2px var(--bg); text-shadow: 0 4px 18px rgba(0,0,0,0.25);
+}
+.timepop.pop { animation: timepop 1.4s cubic-bezier(.2,1.4,.4,1) forwards; }
+@keyframes timepop { 0% { opacity: 0; transform: scale(0.3) rotate(-8deg); } 18% { opacity: 1; transform: scale(1.15) rotate(2deg); } 30% { transform: scale(1) rotate(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1) translateY(-30px); } }
 @keyframes ptspop { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
 .tb-bonus.pop { animation: bonus 0.9s ease-out; }
 @keyframes bonus { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
@@ -308,7 +318,9 @@ tr.cur td { font-weight: 700; }
           <option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option>
         </select>
       </label>
-      <label class="sel testonly" for="startl2"><input type="checkbox" id="startl2"> Start 6×6</label>
+      <label class="sel testonly" for="startlvl">Start
+        <select id="startlvl"><option value="1">5×5</option><option value="2">6×6</option><option value="3">Stones</option></select>
+      </label>
       <button id="newgame" type="button">New game</button>
       <button id="menu" type="button">Menu</button>
     </div>
@@ -344,6 +356,7 @@ tr.cur td { font-weight: 700; }
 
   <div class="tray">
     <div class="ptspop" id="ptspop" aria-hidden="true"></div>
+    <div class="timepop" id="timepop" aria-hidden="true"></div>
     <div class="board" id="board" aria-label="5 by 5 sliding board"></div>
     <div class="banner" id="banner" aria-live="polite"></div>
     <div class="over" id="over" hidden>
@@ -370,8 +383,8 @@ tr.cur td { font-weight: 700; }
     <summary>Rules, voice and stats</summary>
     <div class="morebody">
       <div id="voiceslot"></div>
-  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Every colour above six adds 25%. Instead of a tenth colour, the board grows to 6×6 with eight colours and climbs again to thirteen; the multiplier keeps rising (×3.25 at the top) and a line of six scores 6,000. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
-  <p class="hint"><strong>Timed:</strong> you start with 6 colours and a one-minute bar that runs down. A line of 4 adds 5 seconds, a line of 5 adds 15. Every two minutes another colour joins, up to 10. The game ends when the bar runs out.</p>
+  <p class="hint">Tap a tile next to the gap to slide it in (arrow keys work too). Four of one colour in a row or column scores 1,000, five scores 3,000, and two lines crossing score double. Every colour above six adds 25%. Instead of a tenth colour, the board grows to 6×6 with eight colours and climbs again to thirteen; the multiplier keeps rising (×3.25 at the top) and a line of six scores 6,000. After 6×6 with thirteen colours comes level 3: stones, grey tiles that slide but never match. A line next to a stone cracks it (+500) and turns it into a normal tile; each step adds stones. At the very top the timed clock goes into overtime and runs faster every minute. Matched tiles get new colours that never form another line. If no colour has 4 tiles left, the board turns orange and lines of 3 score 500 (and 3 seconds in timed mode) until some colour has 4 again.</p>
+  <p class="hint"><strong>Timed:</strong> you start with 6 colours and a one-minute bar that runs down. A line of 4 adds 8 seconds at first, tapering to 5; a line of 5 adds 15, so fives are how you win time. The game climbs as you play: time and points both push it, so good play brings the next colour sooner. Instead of a tenth colour, the board grows to 6×6. Fives in a row build a five streak: ×1.5, ×2, ×2.5 on the points. The game ends when the bar runs out.</p>
 
   <div class="formtest">
     <button id="formtest" type="button">Send test stats to the form</button>
@@ -401,7 +414,7 @@ tr.cur td { font-weight: 700; }
         <button type="button" id="sp-free" aria-pressed="false">Free play</button>
         <button type="button" id="sp-timed" aria-pressed="true">Timed</button>
       </div>
-      <p class="sp-note" id="sp-modenote">One minute on the clock. Lines add time, and a colour joins every two minutes.</p>
+      <p class="sp-note" id="sp-modenote">One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.</p>
       <div class="sp-actions">
         <button type="button" id="sp-play" class="play">Play</button>
         <button type="button" id="sp-resume" class="ghost" hidden>Resume</button>
@@ -426,7 +439,7 @@ tr.cur td { font-weight: 700; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v1.3';
+  const APP_VERSION = 'v1.7';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -527,7 +540,8 @@ tr.cur td { font-weight: 700; }
   // octave bass on a square wave; saw pads; drums from downsampled noise. 8-bar loop in A minor, 4 sections:
   // groove, solo, solo, breakdown.
   const music = (() => {
-    const BPM = 106, S16 = 60 / BPM / 4, SWING = 0.22; // swing set in Bass Lab
+    const BPM = 106, SWING = 0.22; // swing set in Bass Lab
+    let S16 = 60 / BPM / 4;
     // Chords written in A minor; each song cycle transposes them. tones: absolute pitch classes for the lead;
     // st: chord tones relative to the root for the bass solo; r: groove bass root (MIDI); pad: voicing (MIDI).
     const CHORDLIB = {
@@ -876,7 +890,9 @@ tr.cur td { font-weight: 700; }
       leadGain.gain.cancelScheduledValues(ac.currentTime);
       leadGain.gain.setTargetAtTime(0, ac.currentTime, 0.02);
     }
-    return { start, stop, get playing() { return playing; } };
+    // Overtime speeds the music up a little: rate 1 = 106 bpm.
+    function setRate(f) { S16 = 60 / (BPM * f) / 4; }
+    return { start, stop, setRate, get playing() { return playing; } };
   })();
   const musicBox = document.getElementById('music');
   try { musicBox.checked = localStorage.getItem('slide4-music') === '1'; } catch (e) {}
@@ -888,15 +904,57 @@ tr.cur td { font-weight: 700; }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (music.playing) music.stop(); } else if (musicBox.checked && ac) wantMusic();
   });
-  function playScore(big) {
+  // Fanfare for fives and sixes: a two-octave run, a rising whoosh, a bright detuned chord with a filter sweep, bells on top.
+  function fanfare(t, six, up) {
+    const k = Math.pow(2, Math.min(up || 0, 6) * 2 / 12);   // each streak link lifts it a whole step
+    const run = [523, 659, 784, 1047, 1319, 1568, 2093].concat(six ? [2637] : []).map(f => f * k);
+    run.forEach((f, i) => note(f, t + i * 0.045, 0.22, 'square', 0.05));
+    const end = t + run.length * 0.045;
+    // whoosh: noise through a rising band-pass
+    const len = Math.floor(ac.sampleRate * 0.5), buf = ac.createBuffer(1, len, ac.sampleRate), dd = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) dd[i] = Math.random() * 2 - 1;
+    const n = ac.createBufferSource(), bp = ac.createBiquadFilter(), ng = ac.createGain();
+    n.buffer = buf; bp.type = 'bandpass'; bp.Q.value = 2;
+    bp.frequency.setValueAtTime(400, t); bp.frequency.exponentialRampToValueAtTime(6000, end);
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(0.12, end - 0.05); ng.gain.exponentialRampToValueAtTime(0.0001, end + 0.15);
+    n.connect(bp); bp.connect(ng); ng.connect(ac.destination); n.start(t); n.stop(end + 0.2);
+    // chord stab: C major (plus D on a six), detuned saws through a closing filter
+    const lp = ac.createBiquadFilter(), cg = ac.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 6;
+    lp.frequency.setValueAtTime(7000, end); lp.frequency.exponentialRampToValueAtTime(900, end + 0.9);
+    cg.gain.setValueAtTime(0.0001, end); cg.gain.exponentialRampToValueAtTime(0.16, end + 0.01); cg.gain.exponentialRampToValueAtTime(0.0001, end + 1.1);
+    lp.connect(cg); cg.connect(ac.destination);
+    [523, 659, 784, 1047].concat(six ? [1175] : []).map(f => f * k).forEach(f => [-12, 12].forEach(dt => {
+      const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = dt;
+      o.connect(lp); o.start(end); o.stop(end + 1.15);
+    }));
+    // bells
+    [2093, 2637, 3136].map(f => f * k).forEach((f, i) => note(f, end + 0.08 + i * 0.09, 0.6, 'sine', 0.09));
+  }
+  function playCrack(k) {
+    if (!soundBox.checked || !audio()) return;
+    const t = ac.currentTime + 0.02;
+    for (let i = 0; i < Math.min(3, k); i++) {
+      const tt = t + i * 0.06;
+      const len = Math.floor(ac.sampleRate * 0.12), buf = ac.createBuffer(1, len, ac.sampleRate), dd = buf.getChannelData(0);
+      for (let j = 0; j < len; j++) dd[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / len, 3);
+      const n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      n.buffer = buf; f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.8; g.gain.value = 0.5;
+      n.connect(f); f.connect(g); g.connect(ac.destination); n.start(tt);
+      note(110, tt, 0.15, 'triangle', 0.25);
+    }
+  }
+  function playScore(kind, strk) {
     if (!soundBox.checked || !audio()) return;
     const t = ac.currentTime + 0.01;
+    if (kind === 'five' || kind === 'six') { fanfare(t, kind === 'six', Math.max(0, (strk || 1) - 1)); return; }
+    const big = kind === 'cross';
     if (!big) {
       // Line of 4: a bright two-note chime.
       note(784, t, 0.22, 'triangle', 0.22);
       note(1175, t + 0.08, 0.32, 'triangle', 0.2);
     } else {
-      // Line of 5 or a cross: rising arpeggio with a sparkle on top.
+      // A cross: rising arpeggio with a sparkle on top.
       [523, 659, 784, 1047].forEach((f, i) => note(f, t + i * 0.07, 0.3, 'square', 0.07));
       note(1568, t + 0.3, 0.55, 'triangle', 0.2);
       note(2093, t + 0.36, 0.5, 'sine', 0.12);
@@ -1030,8 +1088,8 @@ tr.cur td { font-weight: 700; }
   function renderTime() {
     tbFill.style.width = Math.max(0, timeLeft / T_MAX * 100) + '%';
     tbSec.textContent = clockOn || elapsed > 0 ? Math.ceil(Math.max(0, timeLeft)) + ' s left' : 'Starts on your first move';
-    const nextIn = LEVEL_EVERY - (elapsed % LEVEL_EVERY);
-    tbColors.textContent = (level === 2 ? '6×6 · ' : '') + nColors + ' colors' + (rung < LADDER.length - 1 && elapsed > 0 ? ' · next in ' + Math.ceil(nextIn) + ' s' : '');
+    tbColors.textContent = otStart ? 'Overtime · clock ×' + (1 + 0.1 * (elapsed - otStart) / 60).toFixed(1)
+      : (level === 2 ? '6×6 · ' : level === 3 ? 'Stones · ' : '') + nColors + ' colors' + (rung < LADDER.length - 1 && elapsed > 0 ? ' · next ' + Math.min(99, Math.floor(prog * 100)) + '%' : '');
     timebar.classList.toggle('low', clockOn && timeLeft <= 10);
   }
   // Per-game record for the opt-in stats.
@@ -1045,10 +1103,19 @@ tr.cur td { font-weight: 700; }
     let dt = (now - lastFrame) / 1000;
     lastFrame = now;
     if (dt > 0.25) dt = 0; // tab was hidden: the clock pauses
-    timeLeft -= dt; elapsed += dt;
+    // Overtime: after the top of the ladder the clock runs 10% faster for every minute spent there.
+    if (!otStart && rung === LADDER.length - 1 && elapsed > 0) {
+      otStart = elapsed;
+      setTimeout(() => { banner('Overtime'); say('overtime'); }, 900);
+    }
+    const rate = otStart ? 1 + 0.1 * (elapsed - otStart) / 60 : 1;
+    if (otStart) { try { music.setRate(Math.min(1.2, 1 + (rate - 1) * 0.3)); } catch (e) {} }
+    timeLeft -= dt * rate; elapsed += dt;
     if (gs && Math.floor(elapsed / 10) >= gs.tl.length) gs.tl.push(Math.max(0, Math.round(timeLeft)));
-    const target = Math.min(LADDER.length - 1, Math.floor(elapsed / LEVEL_EVERY));
-    if (target > rung) goToRung(target);
+    if (rung < LADDER.length - 1) {
+      prog += dt / STEP_TIME;
+      if (prog >= 1 && pendingRung < 0) { prog -= 1; goToRung(rung + 1); }
+    }
     if (timeLeft <= 0) { timeLeft = 0; renderTime(); gameOver(); return; }
     renderTime();
     requestAnimationFrame(frame);
@@ -1067,7 +1134,7 @@ tr.cur td { font-weight: 700; }
     (list || []).forEach(e => {
       if (!e || typeof e.s !== 'number' || e.s <= 0) return;
       const k = e.s + '|' + (e.t || 0);
-      if (!seen.has(k)) { seen.add(k); out.push({ s: e.s, t: e.t || 0, c: e.c || 0, n: typeof e.n === 'string' ? e.n.slice(0, 3) : '', r: e.r === 2 ? 2 : 1, l: e.l === 2 ? 2 : 1 }); }
+      if (!seen.has(k)) { seen.add(k); out.push({ s: e.s, t: e.t || 0, c: e.c || 0, n: typeof e.n === 'string' ? e.n.slice(0, 3) : '', r: e.r === 2 ? 2 : 1, l: e.l === 2 || e.l === 3 ? e.l : 1 }); }
     });
     return out.sort((a, b) => b.s - a.s || a.t - b.t).slice(0, 10);
   }
@@ -1188,7 +1255,7 @@ tr.cur td { font-weight: 700; }
     return {
       v: 1, rules: 2, mode, end: end || 'over', session: sessionId, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
       score: score * 1000, moves, seconds: Math.round(playSec()), colors: nColors,
-      lines3: gs.l3, lines4: gs.l4, lines5: gs.l5, lines6: gs.l6, level, board: N, crosses: gs.cross, survivals: gs.surv,
+      lines3: gs.l3, lines4: gs.l4, lines5: gs.l5, lines6: gs.l6, stones: gs.stones || 0, bestStreak, overtime: otStart ? Math.round(elapsed - otStart) : 0, level, board: N, crosses: gs.cross, survivals: gs.surv,
       bonusSeconds: gs.bonusNominal, bonusSecondsUsed: Math.round(gs.bonusGained),
       events: gs.ev, timeLeftEvery10s: gs.tl,
       screen: Math.round(Math.min(window.innerWidth, window.innerHeight))
@@ -1244,6 +1311,7 @@ tr.cur td { font-weight: 700; }
 
   function gameOver() {
     over = true; clockOn = false;
+    try { music.setRate(1); } catch (e) {}
     const newBest = score > bestAtStart && score > 0;
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
     const placed = mode === 'timed' ? addTimedScore(score, nColors, level) : { rank: -1 };
@@ -1273,10 +1341,22 @@ tr.cur td { font-weight: 700; }
   // Inflation: each colour above six adds 25% to every line's points.
   // Difficulty ladder: [level, colours]. Level 1 is 5x5 (6-9 colours); instead of a tenth colour the board
   // grows to 6x6 with 8 colours (level 2), which climbs to 13.
-  const LADDER = [[1, 6], [1, 7], [1, 8], [1, 9], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13]];
+  // Level 3 stays 6x6 with fewer colours but adds stones: [level, colours, stones on the board at that rung].
+  const LADDER = [[1, 6], [1, 7], [1, 8], [1, 9], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13],
+                  [3, 9, 3], [3, 10, 4], [3, 11, 5], [3, 12, 6]];
+  const L3_START = 10, STONE = -1;
+  const STONE_LOOK = { c: '#8a8f88', ink: 'rgba(20,24,22,0.45)', d: 'M7 5.5l6.5-2 5 3.5 2 6.5-3.5 5.5-7 1.5-5-3.5-1.5-6.5z' };
+  let otStart = 0;   // timed: elapsed seconds when overtime began (0 = not yet)
+  // Timed climb: one step needs one unit of progress, fed by time and by points (in lines of four).
+  const STEP_TIME = 180, STEP_LINES = 30;
+  let prog = 0;
+  // Five streak: consecutive fives (no other line in between) multiply the points: x1, x1.5, x2, ...
+  let streak = 0, bestStreak = 0;
   let level = 1, rung = 0, pendingRung = -1;
-  const multFor = (lv, n) => lv === 1 ? 1 + 0.25 * Math.max(0, n - 6) : 2 + 0.25 * (n - 8);
+  const multFor = (lv, n) => lv === 1 ? 1 + 0.25 * Math.max(0, n - 6) : lv === 2 ? 2 + 0.25 * (n - 8) : 3.5 + 0.25 * (n - 9);
   const mult = n => multFor(level, n);
+  // A line of four is worth 8 seconds at the start, tapering to 5 at the top of the ladder.
+  const fourBonus = () => Math.round(8 - 3 * Math.max(0, rung) / (LADDER.length - 1));
   const NUMWORD = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen'];
   let nColors = 7, grid = [], hole = N * N - 1, score = 0, moves = 0, busy = false, nextId = 1;
   let totals = {};
@@ -1321,7 +1401,7 @@ tr.cur td { font-weight: 700; }
       let start = 0;
       for (let k = 1; k <= idxs.length; k++) {
         if (k === idxs.length || cols[idxs[k]] === null || cols[idxs[k]] !== cols[idxs[start]]) {
-          if (cols[idxs[start]] !== null && k - start >= minLen()) lines.push(idxs.slice(start, k));
+          if (cols[idxs[start]] !== null && cols[idxs[start]] !== STONE && k - start >= minLen()) lines.push(idxs.slice(start, k));
           start = k;
         }
       }
@@ -1355,8 +1435,9 @@ tr.cur td { font-weight: 700; }
     return t;
   }
   function paint(t) {
-    const s = SYMBOLS[t.color];
-    t.b.style.setProperty('--c', PALETTE[t.color]);
+    t.el.classList.toggle('stone', t.color === STONE);
+    const s = t.color === STONE ? STONE_LOOK : SYMBOLS[t.color];
+    t.b.style.setProperty('--c', t.color === STONE ? STONE_LOOK.c : PALETTE[t.color]);
     if (s.ink) t.b.style.setProperty('--ink', s.ink); else t.b.style.removeProperty('--ink');
     t.b.querySelector('path').setAttribute('d', s.d);
   }
@@ -1364,14 +1445,44 @@ tr.cur td { font-weight: 700; }
   // Move up the difficulty ladder: more colours, or the level-up to a 6x6 board.
   function goToRung(target) {
     if (target <= rung) return;
-    const [lv, n] = LADDER[target];
+    const [lv, n, stones] = LADDER[target];
     if (lv !== level) {
       if (busy || over) { pendingRung = target; return; }
-      pendingRung = -1; rung = target; levelUp(n); return;
+      pendingRung = -1; rung = target;
+      if (lv === 3) enterStones(n, stones); else levelUp(n);
+      return;
     }
     rung = target; nColors = n; sel.value = String(n); renderStats();
+    if (stones) addStones(stones);
     if (mode === 'timed') renderTime();
     setTimeout(() => { banner(n + ' colors'); say((NUMWORD[n] || String(n)) + ' colors'); }, 500);
+  }
+  // Turn random tiles into stones until the board holds `target` of them.
+  function addStones(target) {
+    const have = grid.filter(t => t && t.color === STONE).length;
+    const cand = shuffle(grid.map((t, i) => t && t.color !== STONE ? i : -1).filter(i => i >= 0));
+    cand.slice(0, Math.max(0, target - have)).forEach(i => {
+      const t = grid[i]; t.color = STONE; paint(t);
+      t.el.classList.remove('grow'); void t.el.offsetWidth; t.el.classList.add('grow');
+    });
+    setTimeout(() => grid.forEach(t => t && t.color === STONE && t.el.classList.remove('grow')), 300);
+    checkSurvive();
+  }
+  function enterStones(n, k) {
+    busy = true; level = 3; nColors = n; sel.value = String(n);
+    const cols = colorsOf(), fresh = [];
+    grid.forEach((t, i) => { if (t && t.color >= nColors) { fresh.push(i); cols[i] = null; } });
+    recolor(cols, fresh);
+    fresh.forEach(i => { const t = grid[i]; t.color = cols[i]; paint(t); t.el.classList.remove('grow'); void t.el.offsetWidth; t.el.classList.add('grow'); });
+    if (mode === 'timed') { timeLeft = T_MAX; bonus(60); renderTime(); }
+    renderStats();
+    banner('Level 3 · Stones'); say('level three');
+    setTimeout(() => addStones(k), 600);
+    setTimeout(() => {
+      grid.forEach(t => t && t.el.classList.remove('grow'));
+      busy = false; checkSurvive();
+      if (pendingRung > rung) goToRung(pendingRung);
+    }, 1000);
   }
   function levelUp(n) {
     busy = true;
@@ -1438,18 +1549,21 @@ tr.cur td { font-weight: 700; }
       sel.disabled = false;
       timebar.hidden = true;
     }
-    const startL2 = document.getElementById('startl2').checked && document.body.classList.contains('test');
-    N = startL2 ? 6 : 5; level = startL2 ? 2 : 1; pendingRung = -1;
+    const startLv = document.body.classList.contains('test') ? parseInt(document.getElementById('startlvl').value, 10) || 1 : 1;
+    N = startLv >= 2 ? 6 : 5; level = startLv; pendingRung = -1; otStart = 0; prog = 0; streak = 0; bestStreak = 0;
+    try { music.setRate(1); } catch (e) {}
     buildWells();
-    if (startL2) { rung = 4; sel.value = '8'; }
+    if (startLv === 2) { rung = 4; sel.value = '8'; }
+    if (startLv === 3) { rung = L3_START; sel.value = String(LADDER[L3_START][1]); }
     nColors = parseInt(sel.value, 10);
-    if (!startL2) { rung = LADDER.findIndex(([l, c]) => l === 1 && c === nColors); if (rung < 0) rung = nColors < 6 ? -1 : 3; }
+    if (startLv === 1) { rung = LADDER.findIndex(([l, c]) => l === 1 && c === nColors); if (rung < 0) rung = nColors < 6 ? -1 : 3; }
     freeBase = nColors; freeNextAt = 15 * mult(nColors);
     const cols = Array(N * N).fill(null);
     const h = N * N - 1;
     recolor(cols, [...Array(N * N).keys()].filter(i => i !== h));
     score = 0; moves = 0; busy = false;
     build(cols, h);
+    if (startLv === 3) addStones(LADDER[L3_START][2]);
     checkSurvive(true);
     renderStats();
     renderLog();
@@ -1507,9 +1621,28 @@ tr.cur td { font-weight: 700; }
     // 4 in a line = 1, 5 in a line = 3, 3 in a line (survival only) = 0.5; crossing lines score double their sum.
     let pts = lines.reduce((s, l) => s + (l.length >= 6 ? 6 : l.length === 5 ? 3 : l.length === 4 ? 1 : 0.5), 0);
     if (lines.length > 1) pts *= 2;
+    // Stones next to any matched tile crack open: 500 each, and they become normal tiles.
+    const cells = [...new Set(lines.flat())];
+    const stoneHits = [];
+    cells.forEach(i => {
+      const r = Math.floor(i / N), c = i % N;
+      [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].forEach(([rr, cc]) => {
+        if (rr < 0 || rr >= N || cc < 0 || cc >= N) return;
+        const j = rr * N + cc;
+        if (cols[j] === STONE && !stoneHits.includes(j)) stoneHits.push(j);
+      });
+    });
+    pts += 0.5 * stoneHits.length;
+    if (stoneHits.length) { try { playCrack(stoneHits.length); } catch (e) {} if (gs) gs.stones = (gs.stones || 0) + stoneHits.length; }
+    const isFive = lines.some(l => l.length >= 5);
+    streak = isFive ? streak + 1 : 0;
+    bestStreak = Math.max(bestStreak, streak);
+    const sm = streak >= 2 ? 1 + 0.5 * (streak - 1) : 1;
+    pts *= sm;
+    if (mode === 'timed' && rung < LADDER.length - 1) prog = Math.min(1.5, prog + Math.min(0.5, pts / STEP_LINES));   // points (before the colour multiplier) push the climb; one move at most half a step, so no stage is skipped
     pts *= mult(nColors);
-    showPts(pts);
-    try { playScore(lines.length > 1 || lines.some(l => l.length >= 5)); } catch (err) { console.warn(err); }
+    showPts(pts, sm);
+    try { playScore(lines.some(l => l.length >= 6) ? 'six' : isFive ? 'five' : lines.length > 1 ? 'cross' : 'four', streak); } catch (err) { console.warn(err); }
     score += pts;
     if (mode === 'free' && rung < LADDER.length - 1 && score >= freeNextAt) {
       // Each step is about 15 lines' worth at the next rung's multiplier.
@@ -1525,15 +1658,21 @@ tr.cur td { font-weight: 700; }
       if (gs.ev.length < 400) gs.ev.push([Math.round(playSec() * 10) / 10, Math.max(...lines.map(l => l.length)), lines.length, pts, moves]);
     }
     if (mode === 'timed' && !over) {
-      const add = lines.reduce((s, l) => s + (l.length >= 6 ? 25 : l.length === 5 ? 15 : l.length === 4 ? 5 : 3), 0);
+      const add = lines.reduce((s, l) => s + (l.length >= 6 ? 25 : l.length === 5 ? 15 : l.length === 4 ? fourBonus() : 3), 0);
       if (gs) { gs.bonusNominal += add; gs.bonusGained += Math.min(add, T_MAX - timeLeft); }
       timeLeft = Math.min(T_MAX, timeLeft + add);
       bonus(add);
+      if (lines.some(l => l.length >= 5)) {
+        if (streak >= 3) setTimeout(() => banner('Five streak ×' + (1 + 0.5 * (streak - 1))), 300);
+        const tp = document.getElementById('timepop');
+        tp.innerHTML = '<span></span>'; tp.firstChild.textContent = '+' + add + ' s';
+        tp.classList.remove('pop'); void tp.offsetWidth; tp.classList.add('pop');
+      }
       renderTime();
     }
     checkBest();
     renderStats(true);
-    const cells = [...new Set(lines.flat())];
+    cells.push(...stoneHits);
     cells.forEach(i => grid[i].el.classList.add('match'));
     setTimeout(() => {
       const old = cols.slice();
@@ -1552,9 +1691,9 @@ tr.cur td { font-weight: 700; }
     }, 330);
   }
 
-  function showPts(p) {
+  function showPts(p, sm) {
     const el = document.getElementById('ptspop');
-    el.innerHTML = '<span></span>'; el.firstChild.textContent = '+' + fmt(p);
+    el.innerHTML = '<span></span>'; el.firstChild.textContent = '+' + fmt(p) + (sm > 1 ? '  ·  five streak ×' + sm : '');
     el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   }
   function renderStats(bumpScore) {
@@ -1615,9 +1754,9 @@ tr.cur td { font-weight: 700; }
     if (d[0] >= 0 && d[0] < N && d[1] >= 0 && d[1] < N) move(d[0] * N + d[1]);
   });
 
-  const startL2Box = document.getElementById('startl2');
-  try { startL2Box.checked = localStorage.getItem('slide4-startl2') === '1'; } catch (e) {}
-  startL2Box.addEventListener('change', () => { try { localStorage.setItem('slide4-startl2', startL2Box.checked ? '1' : '0'); } catch (e) {} newGame(); });
+  const startLvSel = document.getElementById('startlvl');
+  try { const v = localStorage.getItem('slide4-startlvl'); if (v) startLvSel.value = v; } catch (e) {}
+  startLvSel.addEventListener('change', () => { try { localStorage.setItem('slide4-startlvl', startLvSel.value); } catch (e) {} newGame(); });
   sel.addEventListener('change', newGame);
   modeSel.addEventListener('change', newGame);
   document.getElementById('again').addEventListener('click', () => { unlockSpeech(); newGame(); });
@@ -1648,7 +1787,7 @@ tr.cur td { font-weight: 700; }
     spFree.setAttribute('aria-pressed', String(m === 'free'));
     spTimed.setAttribute('aria-pressed', String(m === 'timed'));
     spNote.textContent = m === 'timed'
-      ? 'One minute on the clock. Lines add time, and a colour joins every two minutes.'
+      ? 'One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.'
       : 'No clock. You start with ' + (testBox.checked ? sel.value : 6) + ' colours, and another joins every 15,000 points.';
   }
   spFree.addEventListener('click', () => setSpMode('free'));
@@ -1669,7 +1808,7 @@ tr.cur td { font-weight: 700; }
       li.children[0].textContent = (i + 1) + '.';
       li.children[1].textContent = e.n || '···';
       li.children[2].textContent = fmt(e.s);
-      li.children[3].textContent = e.r === 2 ? ((e.l === 2 ? '6×6 · ' : '') + (e.c ? e.c + ' colours' : '')) : 'old scoring';
+      li.children[3].textContent = e.r === 2 ? ((e.l === 2 ? '6×6 · ' : e.l === 3 ? 'stones · ' : '') + (e.c ? e.c + ' colours' : '')) : 'old scoring';
       li.children[4].textContent = fmtDate(e.t);
       hsList.appendChild(li);
     });
@@ -1699,56 +1838,63 @@ tr.cur td { font-weight: 700; }
   document.getElementById('menu').addEventListener('click', showSplash);
   document.getElementById('overmenu').addEventListener('click', showSplash);
 
-  // ---- Animated demo on the splash: a red tile slides up and completes a row of four ----
+  // ---- Animated demo on the splash: scene 1 makes a four, scene 2 a five that wins time ----
   const demo = document.getElementById('demo'), demoCap = document.getElementById('democap');
-  const DEMO_START = [1,2,3,4,5, 3,4,1,6,2, 0,0,0,null,3, 2,6,4,0,1, 4,1,2,5,6];
-  const DEMO_NEW = [5, 3, 6, 2];
-  const demoTiles = [];
+  const SCENES = [
+    { start: [1,2,3,4,5, 3,4,1,6,2, 0,0,0,null,3, 2,6,4,0,1, 4,1,2,5,6], from: 18, to: 13, line: [10, 11, 12], fresh: [5, 3, 6, 2],
+      plus: '+1,000', caps: ['Tap a tile next to the gap', 'It slides in', 'Four in a row scores', 'and the tiles get new colours'] },
+    { start: [1,3,2,4,5, 3,4,5,6,2, 0,0,null,0,0, 2,6,0,4,1, 4,1,3,5,6], from: 17, to: 12, line: [10, 11, 13, 14], fresh: [5, 3, 6, 2, 4],
+      plus: '+3,000 · +15 s', caps: ['Now line up five', 'It slides in', 'Five scores triple', 'and in timed mode wins 15 seconds'] }
+  ];
   for (let i = 0; i < 25; i++) {
     const sl = document.createElement('div'); sl.className = 'slot'; sl.style.transform = pos(i, 5); sl.innerHTML = '<i></i>'; demo.appendChild(sl);
   }
-  for (let i = 0; i < 25; i++) {
-    if (DEMO_START[i] === null) continue;
-    const el = document.createElement('div'); el.className = 'tile';
-    const b = document.createElement('b'); el.appendChild(b); demo.appendChild(el);
-    demoTiles.push({ home: i, el, b });
-  }
-  const tapEl = document.createElement('div'); tapEl.className = 'tap'; tapEl.style.transform = pos(18, 5); demo.appendChild(tapEl);
-  const plusEl = document.createElement('div'); plusEl.className = 'plus'; plusEl.innerHTML = '<span>+1,000</span>'; demo.appendChild(plusEl);
-  let demoTimers = [];
+  const tapEl = document.createElement('div'); tapEl.className = 'tap'; demo.appendChild(tapEl);
+  const plusEl = document.createElement('div'); plusEl.className = 'plus'; plusEl.innerHTML = '<span></span>'; demo.appendChild(plusEl);
+  let demoTiles = [], demoTimers = [], scene = 0;
   const later = (ms, fn) => demoTimers.push(setTimeout(fn, ms));
-  function demoReset() {
-    demoTiles.forEach(t => {
-      t.el.classList.remove('match', 'grow');
-      t.el.style.transition = 'none';
-      t.el.style.transform = pos(t.home, 5);
-      t.b.style.setProperty('--c', PALETTE[DEMO_START[t.home]]);
-      void t.el.offsetWidth; t.el.style.transition = '';
+  function demoPaint(t, c) {
+    const sy = SYMBOLS[c];
+    t.b.style.setProperty('--c', PALETTE[c]);
+    if (sy.ink) t.b.style.setProperty('--ink', sy.ink); else t.b.style.removeProperty('--ink');
+    t.b.querySelector('path').setAttribute('d', sy.d);
+  }
+  function demoBuild(sc) {
+    demoTiles.forEach(t => t.el.remove()); demoTiles = [];
+    sc.start.forEach((c, i) => {
+      if (c === null) return;
+      const el = document.createElement('div'); el.className = 'tile';
+      const b = document.createElement('b'); b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd"/></svg>';
+      el.appendChild(b); el.style.transform = pos(i, 5); demo.insertBefore(el, tapEl);
+      const t = { home: i, el, b }; demoPaint(t, c); demoTiles.push(t);
     });
+    tapEl.style.transform = pos(sc.from, 5);
     tapEl.classList.remove('show'); plusEl.classList.remove('show');
   }
   function demoRun() {
-    demoReset();
-    demoCap.textContent = 'Tap a tile next to the gap';
-    const mover = demoTiles.find(t => t.home === 18);
+    const sc = SCENES[scene]; scene = (scene + 1) % SCENES.length;
+    demoBuild(sc);
+    demoCap.textContent = sc.caps[0];
+    const mover = demoTiles.find(t => t.home === sc.from);
+    const row = sc.line.map(h => demoTiles.find(t => t.home === h)).concat([mover]);
     later(900, () => { tapEl.classList.remove('show'); void tapEl.offsetWidth; tapEl.classList.add('show'); });
-    later(1250, () => { mover.el.style.transform = pos(13, 5); demoCap.textContent = 'It slides in'; });
+    later(1250, () => { mover.el.style.transform = pos(sc.to, 5); demoCap.textContent = sc.caps[1]; });
     later(1750, () => {
-      demoCap.textContent = 'Four in a row scores';
-      [10, 11, 12].map(h => demoTiles.find(t => t.home === h)).concat([mover]).forEach(t => t.el.classList.add('match'));
+      demoCap.textContent = sc.caps[2];
+      row.forEach(t => t.el.classList.add('match'));
+      plusEl.firstChild.textContent = sc.plus;
       plusEl.classList.remove('show'); void plusEl.offsetWidth; plusEl.classList.add('show');
     });
     later(2100, () => {
-      const row = [10, 11, 12].map(h => demoTiles.find(t => t.home === h)).concat([mover]);
-      row.forEach((t, k) => { t.b.style.setProperty('--c', PALETTE[DEMO_NEW[k]]); t.el.classList.remove('match'); void t.el.offsetWidth; t.el.classList.add('grow'); });
-      demoCap.textContent = 'and the tiles get new colours';
+      row.forEach((t, k) => { demoPaint(t, sc.fresh[k]); t.el.classList.remove('match'); void t.el.offsetWidth; t.el.classList.add('grow'); });
+      demoCap.textContent = sc.caps[3];
     });
-    later(4300, demoRun);
+    later(4400, demoRun);
   }
   function demoStart() { demoStop(); demoRun(); }
   function demoStop() { demoTimers.forEach(clearTimeout); demoTimers = []; }
 
-  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung }));
+  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung, otStart, prog, streak }));
 
   function start(data) {
     if (data && data.cols && !data.over && data.cols.length === (data.N || 5) * (data.N || 5)) {
@@ -1757,6 +1903,7 @@ tr.cur td { font-weight: 700; }
       nColors = data.nColors; sel.value = String(nColors); sel.disabled = mode === 'timed';
       score = data.score || 0; moves = data.moves || 0;
       freeBase = data.freeBase || nColors; freeNextAt = data.freeNextAt || 15 * mult(nColors);
+      otStart = data.otStart || 0; prog = data.prog || 0; streak = data.streak || 0;
       rung = typeof data.rung === 'number' ? data.rung : Math.max(0, LADDER.findIndex(([l, c]) => l === level && c === nColors));
       timeLeft = data.timeLeft ?? T_MAX; elapsed = data.elapsed || 0; bestAtStart = best;
       timebar.hidden = mode !== 'timed';
