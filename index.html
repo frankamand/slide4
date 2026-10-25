@@ -437,11 +437,14 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 @media (prefers-reduced-motion: reduce) {
   .title .sc-tw, .title .sc-sun, .title-logo, .title-tap { animation: none; }
 }
+
+/* Logo: each letter in a tile colour, with its own glow */
+.tlogo span { color: var(--lc); text-shadow: 0 0 10px color-mix(in srgb, var(--lc) 75%, transparent), 0 0 24px color-mix(in srgb, var(--lc) 35%, transparent); }
 </style>
 
 <div class="wrap">
   <header>
-    <h1 class="logo">TILESCRAPER</h1>
+    <h1 class="logo tlogo">TILESCRAPER</h1>
     <div class="controls">
       <label class="sel testonly" for="mode">Mode
         <select id="mode"><option value="free">Free</option><option value="timed">Timed</option></select>
@@ -539,13 +542,13 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 <div class="ver" id="ver" aria-hidden="true"></div>
 <div class="title" id="title" role="button" tabindex="0" aria-label="Tilescraper. Tap to start" hidden>
   <div class="sp-scene" id="titlescene" aria-hidden="true"></div>
-  <div class="title-logo" aria-hidden="true"><h2>TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
+  <div class="title-logo" aria-hidden="true"><h2 class="tlogo">TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
   <div class="title-tap" aria-hidden="true">TAP TO START</div>
   <div class="title-copy" aria-hidden="true">© 2026 Frank Amand</div>
 </div>
 <div class="splash" id="splash" role="dialog" aria-label="Tilescraper start screen">
   <div class="sp-inner">
-    <div class="sp-title"><h2>TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
+    <div class="sp-title"><h2 class="tlogo">TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
     <div class="sp-scene" id="spscene" aria-hidden="true"></div>
 
     <div class="sp-section">
@@ -584,7 +587,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v2.9';
+  const APP_VERSION = 'v3.0';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -635,6 +638,22 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   soundBox.addEventListener('change', () => {
     try { localStorage.setItem('slide4-sound', soundBox.checked ? '1' : '0'); } catch (e) {}
   });
+  // Logo letters in tile colours (bright ones only: red, yellow, green, blue, orange, pink, teal, purple, lime, sky, lavender)
+  const LOGO_IDX = [0, 1, 2, 3, 5, 7, 6, 4, 11, 12, 13];
+  function colorLogos() {
+    document.querySelectorAll('.tlogo').forEach(el => {
+      const word = el.dataset.word || (el.dataset.word = el.textContent.trim());
+      el.setAttribute('aria-label', word);
+      el.innerHTML = '';
+      [...word].forEach((ch, i) => {
+        const sp = document.createElement('span');
+        sp.textContent = ch; sp.setAttribute('aria-hidden', 'true');
+        sp.style.setProperty('--lc', PALETTE[LOGO_IDX[i % LOGO_IDX.length]]);
+        el.appendChild(sp);
+      });
+    });
+  }
+  colorLogos();
   const tileSel = document.getElementById('tilestyle');
   tileSel.value = tileStyle;
   tileSel.addEventListener('change', () => {
@@ -644,6 +663,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     document.body.classList.add('ts-' + tileStyle);
     try { localStorage.setItem('slide4-tiles', tileStyle); } catch (e) {}
     grid.forEach(t => t && paint(t));
+    colorLogos();
     document.querySelectorAll('#demo .tile b').forEach(b => { const c = +b.dataset.c; if (!isNaN(c)) { b.style.setProperty('--c', PALETTE[c]); b.classList.toggle('lt', PALETTES[tileStyle].lt.includes(c)); } });
   });
 
