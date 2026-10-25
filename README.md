@@ -1,6 +1,6 @@
-# Slide 4
+# Tilescraper
 
-Slide tiles into the gap and line up four of a colour. An installable web app: open the site on a phone, choose Install (Android Chrome: ⋮ menu → Install app; iPhone Safari: Share → Add to Home Screen) and it runs full screen and offline.
+A match-4 sliding puzzle: slide tiles into the gap, line up four of a colour, and climb the tower. An installable web app: open the site on a phone, choose Install (Android Chrome: ⋮ menu → Install app; iPhone Safari: Share → Add to Home Screen) and it runs full screen and offline.
 
 ## Publish on GitHub Pages
 1. Create a repository (for example `slide4`) and upload everything in this folder to it, keeping the folders.
@@ -14,7 +14,7 @@ If fonts, icons or scripts change, also raise `VERSION` in `sw.js`.
 ## Notes
 - High scores are stored per device in the browser.
 - `js/samjs.min.js` is sam-js, a reverse-engineered port of the 1982 C64 speech program SAM; see `js/samjs-README.md` for its licence notes before any commercial release.
-- Fonts: Bricolage Grotesque and JetBrains Mono (SIL Open Font License), from Fontsource.
+- Fonts: Monoton, Chakra Petch and JetBrains Mono (SIL Open Font License), from Fontsource.
 
 ## Copyright
-© 2026 Frank Amand. All rights reserved. The code, music and graphics of Slide 4 may not be copied, modified or redistributed without permission. Third-party parts keep their own licences (see Notes).
+© 2026 Frank Amand. All rights reserved. The code, music and graphics of Tilescraper may not be copied, modified or redistributed without permission. Third-party parts keep their own licences (see Notes).

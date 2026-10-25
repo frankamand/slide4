@@ -1,10 +1,11 @@
-// Slide 4 service worker: keeps the game on the device so it opens instantly and works offline.
+// Tilescraper service worker: keeps the game on the device so it opens instantly and works offline.
 // The page itself is fetched fresh when online (so updates arrive on the next launch);
 // everything else comes from the cache. Bump VERSION when fonts, icons or scripts change.
-const VERSION = 'slide4-v3';
+const VERSION = 'slide4-v4';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './js/samjs.min.js',
-  './fonts/bricolage-grotesque-latin-500-normal.woff2', './fonts/bricolage-grotesque-latin-800-normal.woff2',
+  './fonts/monoton-latin-400-normal.woff2', './fonts/chakra-petch-latin-400-normal.woff2',
+  './fonts/chakra-petch-latin-600-normal.woff2', './fonts/chakra-petch-latin-700-normal.woff2',
   './fonts/jetbrains-mono-latin-500-normal.woff2', './fonts/jetbrains-mono-latin-700-normal.woff2',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'
 ];

@@ -1,10 +1,10 @@
 <!-- Slide 4 · © 2026 Frank Amand. All rights reserved. -->
-<title>Slide 4</title>
+<title>Tilescraper</title>
 <script src="https://cdn.jsdelivr.net/npm/sam-js@0.3.1/dist/samjs.min.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=Chakra+Petch:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 /* Layout: one centred column — name and controls, a slate-grey tray with 25 wells, then a small test log. */
 :root {
@@ -247,6 +247,20 @@ body.n7 .tray { padding: 6px; }
 }
 .tile.grow b { animation: grow 220ms cubic-bezier(.3,1.4,.5,1) forwards; }
 @keyframes grow { from { transform: scale(0.15); } to { transform: scale(1); } }
+/* Themed clears: a column rides up like a lift, a row dissolves from its centre outwards */
+.tile.match { z-index: 3; }
+.tile.match.up b { animation: liftUp 440ms cubic-bezier(.55,0,.75,.35) var(--d, 0ms) forwards; }
+@keyframes liftUp {
+  0% { transform: translateY(0); opacity: 1; }
+  22% { transform: translateY(5%) scale(1.04); opacity: 1; box-shadow: 0 0 0 3px var(--fg), inset 0 -5px 0 rgba(0,0,0,0.2); }
+  100% { transform: translateY(-135%) scale(0.9); opacity: 0; }
+}
+.tile.match.out b { animation: dissolveOut 300ms ease-in var(--d, 0ms) forwards; }
+@keyframes dissolveOut {
+  0% { transform: scale(1); opacity: 1; }
+  35% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 0 3px var(--fg), inset 0 -5px 0 rgba(0,0,0,0.2); }
+  100% { transform: scale(0.1); opacity: 0; }
+}
 
 .hint { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.5; max-width: 60ch; }
 .hint strong { color: var(--fg); font-weight: 600; }
@@ -317,13 +331,95 @@ tr.cur td { font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) {
   .tile { transition-duration: 1ms; }
-  .tile.match b, .tile.grow b, .stat .v.bump { animation-duration: 1ms; }
+  .tile.match b, .tile.match.up b, .tile.match.out b, .tile.grow b, .stat .v.bump { animation-duration: 1ms; animation-delay: 0ms; }
+}
+
+/* ===== Tilescraper look: synthwave night, neon accents ===== */
+:root:not(#_) {
+  --bg: #140830; --tray: #1C0B3A; --well: #12062B; --fg: #F6EAFF; --muted: #C9B6E8; --line: #4B2A7A; --accent: #FF4FA3;
+  --time: #39E6FF; --survive: #FF8A3D; --danger: #FF4F6A; --scrim: rgba(20, 8, 48, 0.92);
+  --neon: #FF4FA3; --cyan: #39E6FF; --gold: #FFD24D;
+  --font-display: "Chakra Petch", system-ui, sans-serif; --font-body: "Chakra Petch", system-ui, sans-serif;
+  --font-logo: "Monoton", "Chakra Petch", sans-serif;
+  color-scheme: dark;
+}
+h1.logo, .sp-title h2 { font-family: var(--font-logo); font-weight: 400; letter-spacing: 0.02em; color: var(--neon); text-shadow: 0 0 14px rgba(255, 79, 163, 0.7); }
+h1.logo { font-size: clamp(1.25rem, 6.2vw, 1.7rem); line-height: 1.15; }
+.sp-title { text-align: center; }
+.sp-title h2 { font-size: clamp(2rem, 10.5vw, 2.7rem); line-height: 1; letter-spacing: 0; }
+.sp-title p { color: var(--cyan); letter-spacing: 0.25em; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; margin-top: 12px; }
+select, button { background: var(--tray); border-color: var(--line); color: var(--fg); border-radius: 10px; }
+button.play { background: transparent; color: var(--fg); border: 2px solid var(--neon); box-shadow: 0 0 14px rgba(255, 79, 163, 0.6), inset 0 0 10px rgba(255, 79, 163, 0.45); letter-spacing: 0.2em; text-transform: uppercase; }
+.seg { background: transparent; border-color: var(--line); }
+.seg button[aria-pressed="true"] { background: var(--cyan); color: var(--bg); box-shadow: none; }
+.sp-demo { background: var(--tray); box-shadow: 0 0 0 1px var(--line); }
+.tray { background: var(--tray); box-shadow: 0 0 0 1px var(--line); }
+.slot i { border-radius: 14%; background: var(--well); box-shadow: inset 0 0 0 1px rgba(75, 42, 122, 0.6); }
+.tb-fill { box-shadow: 0 0 10px var(--time); }
+.banner span { color: var(--fg); background: rgba(20, 8, 48, 0.8); border: 2px solid var(--cyan); box-shadow: 0 0 16px rgba(57, 230, 255, 0.6), inset 0 0 12px rgba(57, 230, 255, 0.4); text-shadow: 0 0 10px var(--cyan); }
+.ptspop span { background: var(--gold); color: var(--bg); }
+.over button { background: transparent; color: var(--fg); border: 2px solid var(--neon); box-shadow: 0 0 12px rgba(255, 79, 163, 0.5); }
+.timepop span { -webkit-text-stroke: 0; text-shadow: 0 0 18px var(--time); }
+.demo .tap::after { border-color: var(--cyan); background: rgba(57, 230, 255, 0.18); }
+
+/* Tile styles (test mode picks one): plain colour, 80s fluo, neon outlines. Symbols are tone-on-tone. */
+.tile b { border-radius: 14%; }
+.tile b svg { fill: color-mix(in srgb, var(--c) 38%, #ffffff); filter: none; }
+.tile b.lt svg { fill: color-mix(in srgb, var(--c) 68%, #140830); }
+body.ts-plain .tile b { box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25), inset 0 2px 0 rgba(255, 255, 255, 0.18), 0 0 8px color-mix(in srgb, var(--c) 40%, transparent); }
+body.ts-fluo .tile b { box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18), 0 0 12px color-mix(in srgb, var(--c) 75%, transparent); }
+body.ts-neon .tile b { background: color-mix(in srgb, var(--c) 10%, #140830); box-shadow: inset 0 0 0 2px var(--c), inset 0 0 10px color-mix(in srgb, var(--c) 35%, transparent), 0 0 9px color-mix(in srgb, var(--c) 55%, transparent); }
+body.ts-neon .tile b svg, body.ts-neon .board:not(.pimp) .tile b svg { display: block; fill: var(--c); width: 62%; height: 62%; filter: drop-shadow(0 0 3px var(--c)); }
+.tile.stone b { background-image: none; }
+body.ts-neon .tile.stone b { background: #55585c; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.3); }
+body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
+
+/* Start-screen city: striped sun, tile towers, and the board as a faint ground floor */
+.sp-scene { position: relative; height: 230px; margin: 0 -16px; overflow: hidden; }
+.sc-sky { position: absolute; left: 0; right: 0; top: 0; height: 150px; background: linear-gradient(180deg, #140830 0%, #3D0F63 60%, #A1207E 100%); }
+.sc-sun { position: absolute; left: 50%; top: 18px; width: 150px; height: 150px; margin-left: -75px; border-radius: 50%; background: linear-gradient(180deg, #FFD36B 0%, #FF7A59 45%, #FF3E9A 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent 50%, transparent 56%, #000 56%, #000 66%, transparent 66%, transparent 71%, #000 71%, #000 80%, transparent 80%, transparent 84%, #000 84%);
+  mask-image: linear-gradient(180deg, #000 50%, transparent 50%, transparent 56%, #000 56%, #000 66%, transparent 66%, transparent 71%, #000 71%, #000 80%, transparent 80%, transparent 84%, #000 84%); }
+.sc-city { position: absolute; left: 0; right: 0; top: 0; height: 150px; display: flex; justify-content: center; align-items: flex-end; gap: 5px; }
+.sc-tw { display: grid; gap: 2px; padding: 3px; background: #1C0B3A; border-radius: 3px 3px 0 0; }
+.sc-tw i { display: block; width: var(--t, 7px); height: var(--t, 7px); border-radius: 1.5px; box-sizing: border-box; }
+.sc-floor { position: absolute; left: 0; right: 0; top: 150px; bottom: 0; overflow: hidden; background: linear-gradient(180deg, #4A1258 0%, #1E0A3C 14%, #12062B 40%); perspective: 200px; perspective-origin: 50% 0%; }
+.sc-plane { position: absolute; left: 50%; bottom: 0; width: 1512px; height: 1728px; margin-left: -756px; transform-origin: 50% 100%; transform: rotateX(88deg); background: #160830; }
+.sc-run { position: absolute; left: 0; right: 0; top: -108px; bottom: 0; }
+.sc-cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(14, 108px); grid-auto-rows: 108px; }
+.sc-lines { position: absolute; inset: 0; background-image: repeating-linear-gradient(0deg, rgba(255, 79, 163, 0.45) 0px, rgba(255, 79, 163, 0.45) 3px, transparent 3px, transparent 108px), repeating-linear-gradient(90deg, rgba(255, 79, 163, 0.45) 0px, rgba(255, 79, 163, 0.45) 3px, transparent 3px, transparent 108px); }
+
+/* Title screen: shown once at launch; the city rises, the floor runs towards you, tap to start */
+.title { position: fixed; inset: 0; z-index: 50; background: #140830; overflow: hidden; cursor: pointer; transition: opacity 0.45s ease; --sun: min(62vw, 300px); --t: min(10px, 2.5vw); }
+.title.gone { opacity: 0; pointer-events: none; }
+.title .sp-scene { position: absolute; inset: 0; height: auto; margin: 0; }
+.title .sc-sky, .title .sc-city { height: 62%; }
+.title .sc-city { gap: 6px; }
+.title .sc-tw { gap: 3px; padding: 4px; }
+.title .sc-floor { top: 62%; perspective: 260px; }
+.title .sc-plane { height: 3564px; }
+.title .sc-sun { top: calc(62% - var(--sun) * 0.8); width: var(--sun); height: var(--sun); margin-left: calc(var(--sun) / -2); }
+.title .sc-run { animation: floorRun 1.6s linear infinite; }
+@keyframes floorRun { from { transform: translateY(0); } to { transform: translateY(108px); } }
+.title .sc-tw { transform-origin: 50% 100%; animation: rise 0.9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: var(--d, 0s); }
+@keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.title .sc-sun { animation: sunUp 1.6s cubic-bezier(.2,.8,.2,1) backwards; }
+@keyframes sunUp { from { transform: translateY(45%); opacity: 0; } to { transform: none; opacity: 1; } }
+.title-logo { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 9vh); display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 12px; animation: logoIn 1.2s ease 0.5s backwards; }
+.title-logo h2 { margin: 0; font-family: var(--font-logo); font-weight: 400; font-size: clamp(2.1rem, 11.5vw, 3.6rem); line-height: 1; color: var(--neon); text-shadow: 0 0 18px rgba(255, 79, 163, 0.8), 0 0 40px rgba(255, 79, 163, 0.4); }
+.title-logo p { margin: 0; font-family: var(--font-body); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--cyan); }
+@keyframes logoIn { 0% { opacity: 0; filter: blur(6px); } 30% { opacity: 1; } 34% { opacity: 0.3; } 40% { opacity: 1; filter: none; } 100% { opacity: 1; } }
+.title-tap { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 13vh); text-align: center; font-family: var(--font-body); font-weight: 700; font-size: 1rem; letter-spacing: 0.35em; color: var(--fg); text-shadow: 0 0 10px var(--cyan); animation: tapBlink 1.4s ease-in-out 1.6s infinite backwards; }
+@keyframes tapBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.title-copy { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); text-align: center; font-family: var(--font-body); font-size: 0.72rem; color: rgba(201, 182, 232, 0.75); }
+@media (prefers-reduced-motion: reduce) {
+  .title .sc-run, .title .sc-tw, .title .sc-sun, .title-logo, .title-tap { animation: none; }
 }
 </style>
 
 <div class="wrap">
   <header>
-    <h1>Slide <span class="four">4</span></h1>
+    <h1 class="logo">TILESCRAPER</h1>
     <div class="controls">
       <label class="sel testonly" for="mode">Mode
         <select id="mode"><option value="free">Free</option><option value="timed">Timed</option></select>
@@ -343,6 +439,9 @@ tr.cur td { font-weight: 700; }
 
   <div class="opts">
     <label class="testonly" for="pimp"><input type="checkbox" id="pimp"> Pimp</label>
+    <label class="sel testonly" for="tilestyle">Tiles
+      <select id="tilestyle"><option value="plain">Plain</option><option value="fluo">80s fluo</option><option value="neon">Neon</option></select>
+    </label>
     <label class="testonly" for="sound"><input type="checkbox" id="sound" checked> Sound</label>
     <label for="music"><input type="checkbox" id="music"> Music</label>
     <button id="fs" type="button" title="Full screen" hidden>Full screen</button>
@@ -416,14 +515,16 @@ tr.cur td { font-weight: 700; }
 </div>
 
 <div class="ver" id="ver" aria-hidden="true"></div>
-<div class="splash" id="splash" role="dialog" aria-label="Slide 4 start screen">
+<div class="title" id="title" role="button" tabindex="0" aria-label="Tilescraper. Tap to start" hidden>
+  <div class="sp-scene" id="titlescene" aria-hidden="true"></div>
+  <div class="title-logo" aria-hidden="true"><h2>TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
+  <div class="title-tap" aria-hidden="true">TAP TO START</div>
+  <div class="title-copy" aria-hidden="true">© 2026 Frank Amand</div>
+</div>
+<div class="splash" id="splash" role="dialog" aria-label="Tilescraper start screen">
   <div class="sp-inner">
-    <div class="sp-title"><h2>Slide <span class="four">4</span></h2><p>Slide tiles into the gap. Line up four of a colour.</p></div>
-
-    <div class="sp-demo">
-      <div class="demo" id="demo" aria-hidden="true"></div>
-      <div class="sp-demo-cap" id="democap">Tap a tile next to the gap</div>
-    </div>
+    <div class="sp-title"><h2>TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
+    <div class="sp-scene" id="spscene" aria-hidden="true"></div>
 
     <div class="sp-section">
       <div class="seg" role="group" aria-label="Game mode">
@@ -435,6 +536,11 @@ tr.cur td { font-weight: 700; }
         <button type="button" id="sp-play" class="play">Play</button>
         <button type="button" id="sp-resume" class="ghost" hidden>Resume</button>
       </div>
+    </div>
+
+    <div class="sp-demo">
+      <div class="demo" id="demo" aria-hidden="true"></div>
+      <div class="sp-demo-cap" id="democap">Tap a tile next to the gap</div>
     </div>
 
     <div class="sp-section">
@@ -456,11 +562,24 @@ tr.cur td { font-weight: 700; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v2.3';
+  const APP_VERSION = 'v2.8';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
-  const PALETTE = ['#e5484d', '#f2cf3a', '#3fae5a', '#2f7fe0', '#8a5ad6', '#f58a2b', '#1db3a6', '#e65fae', '#8b5a3a', '#f3f3ec', '#3a3f3c', '#b6d63a', '#7cc8f2', '#c4abef', '#8e2343'];
+  // Tile palettes, same order as SYMBOLS. Symbols are a light tint of the tile; `lt` lists the light tiles,
+  // whose symbol is a deeper shade instead (a light symbol would vanish on them).
+  const PALETTES = {
+    // Plain: the original high-contrast set (hue AND lightness differ, so tiles stay distinct even on 7x7).
+    plain: { c: ['#e5484d', '#f2cf3a', '#3fae5a', '#2f7fe0', '#8a5ad6', '#f58a2b', '#1db3a6', '#e65fae', '#8b5a3a', '#f3f3ec', '#3a3f3c', '#b6d63a', '#7cc8f2', '#c4abef', '#8e2343'], lt: [1, 9, 11, 12, 13] },
+    // 80s fluo: the same hues pushed brighter and more saturated; the dark ones (brown, charcoal, burgundy) stay dark.
+    fluo:  { c: ['#ff3b4a', '#ffe23a', '#2fd35a', '#2a7bff', '#9a55ff', '#ff8a1f', '#00c9b7', '#ff5fc0', '#9c5a2e', '#ffffff', '#33383a', '#c4f52a', '#6fd0ff', '#cfaeff', '#a01f45'], lt: [1, 9, 11, 12, 13] },
+    // Neon: the same hues as outlines and lit symbols; the darkest are lifted just enough to glow on the night background.
+    neon:  { c: ['#ff4d55', '#ffd93d', '#45c76a', '#3d8bff', '#9f6bff', '#ff9233', '#22c9bb', '#ff6cc4', '#c9844f', '#f6f6ee', '#8e9894', '#c2e03f', '#86d4ff', '#d2b8ff', '#c23a66'], lt: [] }
+  };
+  let tileStyle = 'plain';
+  try { const v = localStorage.getItem('slide4-tiles'); if (PALETTES[v]) tileStyle = v; } catch (e) {}
+  let PALETTE = PALETTES[tileStyle].c;
+  document.body.classList.add('ts-' + tileStyle);
   // One symbol per colour, same order as PALETTE; dark ink on the light tiles.
   const SYMBOLS = [
     { d: 'M12 21s-7.5-4.6-9.6-9.2C.8 7.9 3.3 4 7 4c2.1 0 3.6 1.1 5 2.9C13.4 5.1 14.9 4 17 4c3.7 0 6.2 3.9 4.6 7.8C19.5 16.4 12 21 12 21z' },
@@ -494,6 +613,65 @@ tr.cur td { font-weight: 700; }
   soundBox.addEventListener('change', () => {
     try { localStorage.setItem('slide4-sound', soundBox.checked ? '1' : '0'); } catch (e) {}
   });
+  const tileSel = document.getElementById('tilestyle');
+  tileSel.value = tileStyle;
+  tileSel.addEventListener('change', () => {
+    tileStyle = PALETTES[tileSel.value] ? tileSel.value : 'plain';
+    PALETTE = PALETTES[tileStyle].c;
+    document.body.classList.remove('ts-plain', 'ts-fluo', 'ts-neon');
+    document.body.classList.add('ts-' + tileStyle);
+    try { localStorage.setItem('slide4-tiles', tileStyle); } catch (e) {}
+    grid.forEach(t => t && paint(t));
+    document.querySelectorAll('#demo .tile b').forEach(b => { const c = +b.dataset.c; if (!isNaN(c)) { b.style.setProperty('--c', PALETTE[c]); b.classList.toggle('lt', PALETTES[tileStyle].lt.includes(c)); } });
+  });
+
+  // Start-screen city: towers of tiles with a few solved (gold) lines and one gap, over a faint tiled floor.
+  function sceneHTML(title) {
+    const lit = ['#39E6FF', '#FFD24D', '#FF4FA3', '#9B6BFF', '#FF8A3D', '#3DDC97'];
+    const spec = [
+      { cols: 2, rows: 4 }, { cols: 4, rows: 6, row: 2 }, { cols: 2, rows: 9, col: [0, 3] }, { cols: 2, rows: 5 },
+      { cols: 4, rows: 14, row: 4, col: [2, 8], gap: [11, 1] }, { cols: 2, rows: 8, col: [1, 2] },
+      { cols: 3, rows: 5 }, { cols: 2, rows: 10 }, { cols: 2, rows: 3 }
+    ];
+    let k = 0, city = '';
+    spec.forEach(t => {
+      city += '<div class="sc-tw" style="grid-template-columns: repeat(' + t.cols + ', var(--t, 7px)); --d: ' + (0.15 + Math.abs(spec.indexOf(t) - 4) * 0.12).toFixed(2) + 's">';
+      for (let r = 0; r < t.rows; r++) for (let c = 0; c < t.cols; c++) {
+        k++;
+        const solved = t.row === r || (t.col && c === t.col[0] && r >= t.col[1] && r < t.col[1] + 4);
+        const gap = t.gap && t.gap[0] === r && t.gap[1] === c;
+        const st = gap ? 'border: 1px dashed #39E6FF' : solved ? 'background: #FFF1B8; box-shadow: 0 0 5px #FFE27A'
+          : 'background: ' + ((k * 7) % 5 === 0 ? '#2C1550' : lit[(k * 5 + c) % lit.length]);
+        city += '<i style="' + st + '"></i>';
+      }
+      city += '</div>';
+    });
+    const base = ['255,79,163', '57,230,255', '255,210,77', '155,107,255', '255,138,61', '61,220,151'];
+    let cells = '';
+    const rows = title ? 34 : 17, near = rows - 3;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < 14; c++) {
+      const bg = r === near - 1 && c === 9 ? '#0C041F' : r === near && c >= 5 && c <= 8 ? 'rgba(255,241,184,0.21)' : 'rgba(' + base[(r * 5 + c * 3 + (r * c) % 4) % 6] + ',0.125)';
+      cells += '<i style="background:' + bg + '"></i>';
+    }
+    return '<div class="sc-sky"></div><div class="sc-sun"></div><div class="sc-city">' + city + '</div>'
+      + '<div class="sc-floor"><div class="sc-plane"><div class="sc-run"><div class="sc-cells">' + cells + '</div><div class="sc-lines"></div></div></div></div>';
+  }
+  const spScene = document.getElementById('spscene');
+  if (spScene) spScene.innerHTML = sceneHTML(false);
+  // Title screen: built once, shown at launch (not when a game in progress is restored).
+  const titleEl = document.getElementById('title');
+  document.getElementById('titlescene').innerHTML = sceneHTML(true);
+  function showTitle() {
+    titleEl.hidden = false; titleEl.classList.remove('gone');
+    const go = e => {
+      if (e && e.type === 'keydown' && !['Enter', ' ', 'Escape'].includes(e.key)) return;
+      titleEl.removeEventListener('pointerdown', go); titleEl.removeEventListener('keydown', go);
+      titleEl.classList.add('gone');
+      setTimeout(() => { titleEl.hidden = true; }, 460);
+    };
+    titleEl.addEventListener('pointerdown', go); titleEl.addEventListener('keydown', go);
+    try { titleEl.focus({ preventScroll: true }); } catch (e) {}
+  }
 
   // Sounds, synthesised; the audio context starts on the first tap.
   let ac = null;
@@ -1483,7 +1661,7 @@ tr.cur td { font-weight: 700; }
     t.el.classList.toggle('stone', t.color === STONE);
     const s = t.color === STONE ? STONE_LOOK : SYMBOLS[t.color];
     t.b.style.setProperty('--c', t.color === STONE ? STONE_LOOK.c : PALETTE[t.color]);
-    if (s.ink) t.b.style.setProperty('--ink', s.ink); else t.b.style.removeProperty('--ink');
+    t.b.classList.toggle('lt', t.color !== STONE && PALETTES[tileStyle].lt.includes(t.color));
     t.b.querySelector('path').setAttribute('d', s.d);
   }
 
@@ -1729,7 +1907,23 @@ tr.cur td { font-weight: 700; }
     checkBest();
     renderStats(true);
     cells.push(...stoneHits);
-    cells.forEach(i => grid[i].el.classList.add('match'));
+    // Themed clear: columns go up like a lift (top tile first), rows dissolve from the centre outwards.
+    const anim = new Map();
+    lines.forEach(l => {
+      const vert = l[1] - l[0] === N;
+      l.forEach((i, k) => {
+        if (vert) anim.set(i, { cls: 'up', d: k * 35 });
+        else if (!anim.has(i)) anim.set(i, { cls: 'out', d: Math.round(Math.abs(k - (l.length - 1) / 2) * 70) });
+      });
+    });
+    let clearMs = 330;
+    cells.forEach(i => {
+      const el = grid[i].el, a = anim.get(i);
+      el.classList.remove('up', 'out');
+      if (a) { el.classList.add(a.cls); el.style.setProperty('--d', a.d + 'ms'); clearMs = Math.max(clearMs, a.d + (a.cls === 'up' ? 440 : 300)); }
+      el.classList.add('match');
+    });
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) clearMs = 330;
     setTimeout(() => {
       const old = cols.slice();
       cells.forEach(i => { cols[i] = null; });
@@ -1738,7 +1932,7 @@ tr.cur td { font-weight: 700; }
         const t = grid[i];
         t.color = cols[i];
         paint(t);
-        t.el.classList.remove('match');
+        t.el.classList.remove('match', 'up', 'out');
         void t.el.offsetWidth;
         t.el.classList.add('grow');
       });
@@ -1748,7 +1942,7 @@ tr.cur td { font-weight: 700; }
       const want = level >= 3 ? (LADDER[rung][2] || 0) : 0;
       if (want && !stoneHits.length) { const have = grid.filter(t => t && t.color === STONE).length; if (have < want) addStones(have + 1, lastLine); }
       setTimeout(() => { cells.forEach(i => grid[i] && grid[i].el.classList.remove('grow')); busy = false; if (pendingRung > rung) goToRung(pendingRung); }, 230);
-    }, 330);
+    }, clearMs);
   }
 
   function showPts(p, sm) {
@@ -1936,7 +2130,8 @@ tr.cur td { font-weight: 700; }
   function demoPaint(t, c) {
     const sy = SYMBOLS[c];
     t.b.style.setProperty('--c', PALETTE[c]);
-    if (sy.ink) t.b.style.setProperty('--ink', sy.ink); else t.b.style.removeProperty('--ink');
+    t.b.classList.toggle('lt', PALETTES[tileStyle].lt.includes(c));
+    t.b.dataset.c = c;
     t.b.querySelector('path').setAttribute('d', sy.d);
   }
   function demoBuild(sc) {
@@ -1996,6 +2191,7 @@ tr.cur td { font-weight: 700; }
       modeSel.value = spMode;
       newGame();
       showSplash();
+      showTitle();
     }
   }
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
