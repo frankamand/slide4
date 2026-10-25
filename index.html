@@ -411,24 +411,18 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 .sc-city { position: absolute; left: 0; right: 0; top: 0; height: 150px; display: flex; justify-content: center; align-items: flex-end; gap: 5px; }
 .sc-tw { display: grid; gap: 2px; padding: 3px; background: #1C0B3A; border-radius: 3px 3px 0 0; }
 .sc-tw i { display: block; width: var(--t, 7px); height: var(--t, 7px); border-radius: 1.5px; box-sizing: border-box; }
-.sc-floor { position: absolute; left: 0; right: 0; top: 150px; bottom: 0; overflow: hidden; background: linear-gradient(180deg, #4A1258 0%, #1E0A3C 14%, #12062B 40%); perspective: 200px; perspective-origin: 50% 0%; }
-.sc-plane { position: absolute; left: 50%; bottom: 0; width: 1512px; height: 1728px; margin-left: -756px; transform-origin: 50% 100%; transform: rotateX(88deg); background: #160830; }
-.sc-run { position: absolute; left: 0; right: 0; top: -108px; bottom: 0; }
-.sc-cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(14, 108px); grid-auto-rows: 108px; }
-.sc-lines { position: absolute; inset: 0; background-image: repeating-linear-gradient(0deg, rgba(255, 79, 163, 0.45) 0px, rgba(255, 79, 163, 0.45) 3px, transparent 3px, transparent 108px), repeating-linear-gradient(90deg, rgba(255, 79, 163, 0.45) 0px, rgba(255, 79, 163, 0.45) 3px, transparent 3px, transparent 108px); }
+.sc-floor { position: absolute; left: 0; right: 0; top: 150px; bottom: 0; overflow: hidden; background: #160830; }
+.sc-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* Title screen: shown once at launch; the city rises, the floor runs towards you, tap to start */
-.title { position: fixed; inset: 0; z-index: 50; background: #140830; overflow: hidden; cursor: pointer; transition: opacity 0.45s ease; --sun: min(62vw, 300px); --t: min(10px, 2.5vw); }
+.title { position: fixed; inset: 0; z-index: 50; background: #140830; overflow: hidden; cursor: pointer; transition: opacity 0.45s ease; --sun: min(62vw, 300px); --t: min(10px, 2.3vw); }
 .title.gone { opacity: 0; pointer-events: none; }
 .title .sp-scene { position: absolute; inset: 0; height: auto; margin: 0; }
 .title .sc-sky, .title .sc-city { height: 62%; }
 .title .sc-city { gap: 6px; }
-.title .sc-tw { gap: 3px; padding: 4px; }
-.title .sc-floor { top: 62%; perspective: 260px; }
-.title .sc-plane { height: 3564px; }
+.title .sc-tw { gap: 2px; padding: 3px; }
+.title .sc-floor { top: 62%; }
 .title .sc-sun { top: calc(62% - var(--sun) * 0.8); width: var(--sun); height: var(--sun); margin-left: calc(var(--sun) / -2); }
-.title .sc-run { animation: floorRun 1.6s linear infinite; }
-@keyframes floorRun { from { transform: translateY(0); } to { transform: translateY(108px); } }
 .title .sc-tw { transform-origin: 50% 100%; animation: rise 0.9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: var(--d, 0s); }
 @keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 .title .sc-sun { animation: sunUp 1.6s cubic-bezier(.2,.8,.2,1) backwards; }
@@ -441,7 +435,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 @keyframes tapBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 .title-copy { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); text-align: center; font-family: var(--font-body); font-size: 0.72rem; color: rgba(201, 182, 232, 0.75); }
 @media (prefers-reduced-motion: reduce) {
-  .title .sc-run, .title .sc-tw, .title .sc-sun, .title-logo, .title-tap { animation: none; }
+  .title .sc-tw, .title .sc-sun, .title-logo, .title-tap { animation: none; }
 }
 </style>
 
@@ -590,7 +584,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v2.8';
+  const APP_VERSION = 'v2.9';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -674,27 +668,91 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       }
       city += '</div>';
     });
-    const base = ['255,79,163', '57,230,255', '255,210,77', '155,107,255', '255,138,61', '61,220,151'];
-    let cells = '';
-    const rows = title ? 34 : 17, near = rows - 3;
-    for (let r = 0; r < rows; r++) for (let c = 0; c < 14; c++) {
-      const bg = r === near - 1 && c === 9 ? '#0C041F' : r === near && c >= 5 && c <= 8 ? 'rgba(255,241,184,0.21)' : 'rgba(' + base[(r * 5 + c * 3 + (r * c) % 4) % 6] + ',0.125)';
-      cells += '<i style="background:' + bg + '"></i>';
-    }
     return '<div class="sc-sky"></div><div class="sc-sun"></div><div class="sc-city">' + city + '</div>'
-      + '<div class="sc-floor"><div class="sc-plane"><div class="sc-run"><div class="sc-cells">' + cells + '</div><div class="sc-lines"></div></div></div></div>';
+      + '<div class="sc-floor"><canvas class="sc-cv"></canvas></div>';
+  }
+  // The floor is drawn on a 2D canvas with a simple pinhole projection (no CSS 3D: huge rotated layers
+  // flicker or vanish on phones). Cells are faint game colours between pink grid lines; every ninth row
+  // holds a faint gold solved line of four, and one dark gap. `dist` scrolls the floor towards the viewer.
+  const FLOOR_RGB = ['255,79,163', '57,230,255', '255,210,77', '155,107,255', '255,138,61', '61,220,151'];
+  function drawFloor(cv, dist) {
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (!W || !H) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    const f = W / 5.2;            // a floor cell at the bottom edge is about a fifth of the width
+    const he = H / f;             // eye height (in cells) so that depth 1 lands on the bottom edge
+    const px = (x, z) => W / 2 + f * x / z, py = z => f * he / z;
+    const frac = dist - Math.floor(dist), base = Math.floor(dist);
+    const ZMAX = 34;
+    for (let k = ZMAX; k >= 0; k--) {          // far to near
+      const z0 = 1 + k - frac, z1 = z0 + 1;
+      if (z0 <= 0.05) continue;
+      const row = k + base, xr = Math.ceil((W / 2) * z0 / f) + 1;
+      const fade = Math.min(1, 9 / z1);
+      for (let x = -xr; x < xr; x++) {
+        let col;
+        const m = ((row % 9) + 9) % 9;
+        if (m === 3 && x >= -2 && x <= 1) col = 'rgba(255,241,184,' + (0.22 * fade).toFixed(3) + ')';
+        else if (m === 2 && x === 2) col = 'rgba(8,2,22,' + (0.9 * fade).toFixed(3) + ')';
+        else col = 'rgba(' + FLOOR_RGB[(((row * 5 + x * 3 + ((row * x) % 4 + 4) % 4) % 6) + 6) % 6] + ',' + (0.13 * fade).toFixed(3) + ')';
+        g.fillStyle = col;
+        g.beginPath();
+        g.moveTo(px(x, z0), py(z0)); g.lineTo(px(x + 1, z0), py(z0));
+        g.lineTo(px(x + 1, z1), py(z1)); g.lineTo(px(x, z1), py(z1));
+        g.closePath(); g.fill();
+      }
+    }
+    g.strokeStyle = 'rgba(255,79,163,0.5)';
+    for (let k = 0; k <= ZMAX; k++) {           // cross lines
+      const z = 1 + k - frac; if (z <= 0.05) continue;
+      g.lineWidth = Math.max(0.5, 2.2 / z);
+      g.beginPath(); g.moveTo(0, py(z)); g.lineTo(W, py(z)); g.stroke();
+    }
+    g.lineWidth = 1.2;
+    const zn = 0.35, xs = Math.ceil((W / 2) * (ZMAX + 1) / f);
+    for (let x = -xs; x <= xs; x++) {           // lines running to the horizon
+      g.beginPath(); g.moveTo(px(x, zn), py(zn)); g.lineTo(px(x, ZMAX + 1), py(ZMAX + 1)); g.stroke();
+    }
+    const haze = g.createLinearGradient(0, 0, 0, H * 0.35);
+    haze.addColorStop(0, 'rgba(74,18,88,0.95)'); haze.addColorStop(0.3, 'rgba(40,12,70,0.6)'); haze.addColorStop(1, 'rgba(22,8,48,0)');
+    g.fillStyle = haze; g.fillRect(0, 0, W, H * 0.35);
   }
   const spScene = document.getElementById('spscene');
   if (spScene) spScene.innerHTML = sceneHTML(false);
+  const spFloor = spScene ? spScene.querySelector('.sc-cv') : null;
   // Title screen: built once, shown at launch (not when a game in progress is restored).
   const titleEl = document.getElementById('title');
   document.getElementById('titlescene').innerHTML = sceneHTML(true);
+  const titleFloor = titleEl.querySelector('.sc-cv');
+  try {
+    const ro = new ResizeObserver(() => { if (spFloor) drawFloor(spFloor, 0); if (titleEl.hidden) return; drawFloor(titleFloor, titleDist); });
+    if (spFloor) ro.observe(spFloor); ro.observe(titleFloor);
+  } catch (e) {}
+  let titleDist = 0, titleRaf = 0;
+  function titleLoop(t0) {
+    const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let last = t0;
+    const step = now => {
+      if (titleEl.hidden) { titleRaf = 0; return; }
+      if (!still) titleDist += Math.min(0.05, (now - last) / 1000) * 0.65;
+      last = now;
+      drawFloor(titleFloor, titleDist);
+      titleRaf = requestAnimationFrame(step);
+    };
+    titleRaf = requestAnimationFrame(step);
+  }
   function showTitle() {
     titleEl.hidden = false; titleEl.classList.remove('gone');
+    if (!titleRaf) titleLoop(performance.now());
     const go = e => {
       if (e && e.type === 'keydown' && !['Enter', ' ', 'Escape'].includes(e.key)) return;
       titleEl.removeEventListener('pointerdown', go); titleEl.removeEventListener('keydown', go);
       titleEl.classList.add('gone');
+      if (spFloor) drawFloor(spFloor, 0);
       setTimeout(() => { titleEl.hidden = true; }, 460);
     };
     titleEl.addEventListener('pointerdown', go); titleEl.addEventListener('keydown', go);
@@ -2122,6 +2180,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     spResume.hidden = !(moves > 0 && !over);
     renderScores();
     splash.hidden = false;
+    if (spFloor) requestAnimationFrame(() => drawFloor(spFloor, 0));
     demoStart();
   }
   function hideSplash() { splash.hidden = true; demoStop(); }
