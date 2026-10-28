@@ -412,6 +412,22 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 /* Logo: each letter in a tile colour, with its own glow */
 .tlogo span { color: var(--lc); text-shadow: 0 0 10px color-mix(in srgb, var(--lc) 75%, transparent), 0 0 24px color-mix(in srgb, var(--lc) 35%, transparent); }
+
+/* Daily challenge: cleared colours go dark and neutral */
+.seg { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.tile.done b, body.ts-neon .tile.done b { background: #2A2438; box-shadow: inset 0 0 0 1px #3B3350, inset 0 -3px 0 rgba(0, 0, 0, 0.3); }
+.tile.done b svg, body.ts-neon .tile.done b svg { display: none !important; }
+.timebar.daily .sb-track, .timebar.daily .tb-track { display: none; }
+.timebar.daily .tb-info { font-size: 0.95rem; }
+.timebar.daily #tbsec { color: var(--fg); font-weight: 700; }
+
+/* Daily share tower */
+.over.daily { gap: 6px; padding: 12px; overflow-y: auto; }
+.over.daily h2 { font-size: 1.6rem; }
+.over.daily p { line-height: 1.4; font-size: 0.9rem; }
+.over.daily .overbtns button { padding: 8px 14px; }
+.dtower { margin: 0; font-size: 0.85rem; line-height: 1.15; letter-spacing: 0.05em; text-align: left; }
+#dshare { border-color: var(--cyan) !important; box-shadow: 0 0 12px rgba(57, 230, 255, 0.5) !important; }
 </style>
 
 <div class="wrap">
@@ -419,7 +435,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     <h1 class="logo tlogo">TILESCRAPER</h1>
     <div class="controls">
       <label class="sel testonly" for="mode">Mode
-        <select id="mode"><option value="free">Free</option><option value="timed">Timed</option></select>
+        <select id="mode"><option value="free">Free</option><option value="timed">Timed</option><option value="daily">Daily</option></select>
       </label>
       <label class="sel testonly" for="colors">Colors
         <select id="colors">
@@ -455,7 +471,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   </div>
 
   <div class="stats">
-    <div class="stat"><span class="k">Score <span class="mult" id="mult"></span></span><span class="v" id="score">0</span></div>
+    <div class="stat"><span class="k"><span id="scorek">Score</span> <span class="mult" id="mult"></span></span><span class="v" id="score">0</span></div>
     <div class="stat testonly"><span class="k">Moves</span><span class="v" id="moves">0</span></div>
     <div class="stat"><span class="k" id="ratiok">Moves / 1000</span><span class="v" id="ratio">–</span></div>
   </div>
@@ -484,7 +500,9 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
         <button id="statcopybtn" type="button">Copy stats</button>
         <textarea id="statcopytext" readonly rows="2" aria-label="Game stats"></textarea>
       </div>
+      <pre class="dtower" id="dtower" hidden></pre>
       <div class="overbtns" id="overbtns">
+        <button id="dshare" type="button" hidden>Share</button>
         <button id="again" type="button">Play again</button>
         <button id="overmenu" type="button" class="ghost">Menu</button>
       </div>
@@ -527,6 +545,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       <div class="seg" role="group" aria-label="Game mode">
         <button type="button" id="sp-free" aria-pressed="false">Free play</button>
         <button type="button" id="sp-timed" aria-pressed="true">Timed</button>
+        <button type="button" id="sp-daily" aria-pressed="false">Daily</button>
       </div>
       <p class="sp-note" id="sp-modenote">One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.</p>
       <div class="sp-actions">
@@ -559,7 +578,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.0';
+  const APP_VERSION = 'v3.3';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1381,7 +1400,14 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     return (n !== nColors ? nColors + ' → ' + n + ' colors' : 'next:') + (more > 0 ? ' +' + more + (more > 1 ? ' stones' : ' stone') : '');
   }
   const stageLabel = () => (level === 2 ? '6×6 · ' : level === 3 ? '6×6 stones · ' : level === 4 ? '7×7 stones · ' : '') + nColors + ' colors';
+  const fmtClock = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   function renderStep() {
+    if (mode === 'daily') {
+      timebar.classList.remove('soon');
+      tbSec.textContent = clockOn || elapsed > 0 ? fmtClock(elapsed) : 'Clock starts on your first move';
+      tbColors.textContent = dailyCleared + ' of 6 colours cleared';
+      return;
+    }
     const f = stepFrac();
     document.getElementById('sbfill').style.width = (f * 100) + '%';
     timebar.classList.toggle('soon', f >= 0.85 && rung < LADDER.length - 1 && !over);
@@ -1399,6 +1425,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     let dt = (now - lastFrame) / 1000;
     lastFrame = now;
     if (dt > 0.25) dt = 0; // tab was hidden: the clock pauses
+    if (mode === 'daily') { elapsed += dt; renderStep(); requestAnimationFrame(frame); return; }
     // Overtime: after the top of the ladder the clock runs 10% faster for every minute spent there.
     if (!otStart && rung === LADDER.length - 1 && elapsed > 0) {
       otStart = elapsed;
@@ -1546,7 +1573,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   })();
   // Free play has no clock: count playing time between moves, with long pauses capped at 20 s.
   let freeSec = 0, lastMoveAt = 0, sessionId = '', freeSent = false;
-  const playSec = () => mode === 'timed' ? elapsed : freeSec;
+  const playSec = () => mode === 'free' ? freeSec : elapsed;
   function statRecord(end) {
     return {
       v: 1, rules: 3, mode, end: end || 'over', session: sessionId, at: Date.now(), player: playerKey, initials: ini.join(''), owner: viewerIsOwner,
@@ -1611,6 +1638,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     const newBest = score > bestAtStart && score > 0;
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
     const placed = mode === 'timed' ? addTimedScore(score, nColors, level) : { rank: -1 };
+    overEl.querySelector('h2').textContent = 'Game over';
+    dTower.hidden = true; dShare.hidden = true; overEl.classList.remove('daily');
     overText.innerHTML = 'Score <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? 'New high score!' : 'High score ' + fmt(best));
     iniEl.hidden = true; overBtns.hidden = false;
     statCopy.hidden = true;
@@ -1644,7 +1673,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   const LADDER = [[1, 6], [1, 7], [1, 8], [1, 9], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12], [2, 13],
                   [3, 9, 3], [3, 10, 4], [3, 11, 5], [3, 12, 6], [3, 13, 6], [3, 14, 7],
                   [4, 12, 5], [4, 13, 6], [4, 14, 7], [4, 15, 8]];
-  const L3_START = 10, L4_START = 16, STONE = -1;
+  const L3_START = 10, L4_START = 16, STONE = -1, GREY = -2;   // GREY: a cleared tile in the daily challenge
   const STONE_LOOK = { c: '#8a8f88', ink: 'rgba(20,24,22,0.45)', d: 'M7 5.5l6.5-2 5 3.5 2 6.5-3.5 5.5-7 1.5-5-3.5-1.5-6.5z' };
   let otStart = 0;   // timed: elapsed seconds when overtime began (0 = not yet)
   // Timed climb: one step needs one unit of progress, fed by time and by points (in lines of four).
@@ -1702,7 +1731,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       let start = 0;
       for (let k = 1; k <= idxs.length; k++) {
         if (k === idxs.length || cols[idxs[k]] === null || cols[idxs[k]] !== cols[idxs[start]]) {
-          if (cols[idxs[start]] !== null && cols[idxs[start]] !== STONE && k - start >= minLen()) lines.push(idxs.slice(start, k));
+          if (cols[idxs[start]] !== null && cols[idxs[start]] !== STONE && cols[idxs[start]] !== GREY && k - start >= minLen()) lines.push(idxs.slice(start, k));
           start = k;
         }
       }
@@ -1737,6 +1766,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   }
   function paint(t) {
     t.el.classList.toggle('stone', t.color === STONE);
+    t.el.classList.toggle('done', t.color === GREY);
+    if (t.color === GREY) { t.b.style.setProperty('--c', '#2A2438'); t.b.classList.remove('lt'); return; }
     const s = t.color === STONE ? STONE_LOOK : SYMBOLS[t.color];
     t.b.style.setProperty('--c', t.color === STONE ? STONE_LOOK.c : PALETTE[t.color]);
     t.b.classList.toggle('lt', t.color !== STONE && PALETTES[tileStyle].lt.includes(t.color));
@@ -1834,6 +1865,125 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     markMovable();
   }
 
+  // ---- Daily challenge: one seeded 5x5 board per UTC day, six colours of four tiles each.
+  // A line of a colour's four tiles turns them dark grey (neutral, never matches). Clear all six against the clock.
+  let dailyCleared = 0, dailyDay = '', dailyLog = [];   // dailyLog: [colour, moves when cleared, vertical?] per cleared colour
+  const GAME_URL = 'https://frankamand.github.io/slide4/';
+  const SQUARES = ['🟥', '🟨', '🟩', '🟦', '🟪', '🟧'];
+  // The tower: one floor per cleared colour, first cleared at the bottom; one block per 4 moves spent on it.
+  function dailyTower() {
+    let prev = 0;
+    const floors = dailyLog.map(([c, m]) => { const n = Math.max(1, Math.min(10, Math.round((m - prev) / 4))); prev = m; return SQUARES[c].repeat(n); });
+    return floors.reverse().join('\n');
+  }
+  function dailyShareText() {
+    return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves\n\n' + dailyTower() + '\n\n' + GAME_URL;
+  }
+  const DAILY_EPOCH = Date.UTC(2026, 9, 28);   // Daily #1 = 28 Oct 2026
+  const dailyKey = () => new Date().toISOString().slice(0, 10);
+  const dailyNo = (key) => Math.floor((Date.parse((key || dailyDay || dailyKey()) + 'T00:00:00Z') - DAILY_EPOCH) / 86400000) + 1;
+  function seededRng(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    let a = h >>> 0;
+    return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  // !!! FROZEN once the daily is live: seededRng, dailyBoard and the 'tilescraper-daily-' seed must never change,
+  // or players on different versions get different boards on the same day. A new generator may only take over
+  // from a fixed future daily number (e.g. if (dailyNo(key) >= 50) return dailyBoardV2(key)).
+  function dailyBoard(key) {
+    const rnd = seededRng('tilescraper-daily-' + key);
+    for (let tries = 0; tries < 500; tries++) {
+      const tiles = [];
+      for (let c = 0; c < 6; c++) for (let k = 0; k < 4; k++) tiles.push(c);
+      for (let i = tiles.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
+      const hole = Math.floor(rnd() * 25);
+      const cols = [];
+      for (let i = 0, k = 0; i < 25; i++) cols.push(i === hole ? null : tiles[k++]);
+      // no colour may already have three of its four in a row: the start should take some work
+      let ok = true;
+      const run = idxs => { let n = 1; for (let k = 1; k < idxs.length; k++) { n = cols[idxs[k]] !== null && cols[idxs[k]] === cols[idxs[k - 1]] ? n + 1 : 1; if (n >= 3) ok = false; } };
+      for (let r = 0; r < 5; r++) run([0, 1, 2, 3, 4].map(c => r * 5 + c));
+      for (let c = 0; c < 5; c++) run([0, 1, 2, 3, 4].map(r => r * 5 + c));
+      if (ok) return { cols, hole };
+    }
+    return null;
+  }
+  function dailyNew() {
+    sel.value = '6'; sel.disabled = true;
+    N = 5; level = 1; rung = 0; pendingRung = -1; otStart = 0; prog = 0; streak = 0; bestStreak = 0; climbPts = 0; lastLine = [];
+    nColors = 6; elapsed = 0; dailyCleared = 0; dailyDay = dailyKey(); dailyLog = [];
+    try { music.setRate(1); } catch (e) {}
+    buildWells();
+    const b = dailyBoard(dailyDay);
+    score = 0; moves = 0; busy = false;
+    build(b.cols, b.hole);
+    renderStats(); renderLog();
+  }
+  function dailyResolve(dest) {
+    const cols = colorsOf();
+    const lines = findLines(cols).filter(l => l.includes(dest));
+    if (!lines.length) { busy = false; return; }
+    const cells = [...new Set(lines.flat())];
+    try { playScore(lines.length > 1 ? 'cross' : 'four', 0); } catch (e) {}
+    const anim = new Map();
+    lines.forEach(l => {
+      const vert = l[1] - l[0] === N;
+      l.forEach((i, k) => { if (vert) anim.set(i, { cls: 'up', d: k * 35 }); else if (!anim.has(i)) anim.set(i, { cls: 'out', d: Math.round(Math.abs(k - (l.length - 1) / 2) * 70) }); });
+    });
+    let clearMs = 330;
+    cells.forEach(i => {
+      const el = grid[i].el, a = anim.get(i);
+      el.classList.remove('up', 'out');
+      if (a) { el.classList.add(a.cls); el.style.setProperty('--d', a.d + 'ms'); clearMs = Math.max(clearMs, a.d + (a.cls === 'up' ? 440 : 300)); }
+      el.classList.add('match');
+    });
+    dailyCleared += lines.length;
+    lines.forEach(l => dailyLog.push([cols[l[0]], moves, l[1] - l[0] === N]));
+    if (gs) { gs.l4 += lines.length; if (gs.ev.length < 400) gs.ev.push([Math.round(elapsed * 10) / 10, 4, lines.length, 0, moves]); }
+    renderStats(true);
+    setTimeout(() => {
+      cells.forEach(i => { const t = grid[i]; t.color = GREY; paint(t); t.el.classList.remove('match', 'up', 'out'); void t.el.offsetWidth; t.el.classList.add('grow'); });
+      setTimeout(() => {
+        cells.forEach(i => grid[i] && grid[i].el.classList.remove('grow'));
+        busy = false;
+        if (dailyCleared >= 6) dailyDone();
+      }, 230);
+    }, clearMs);
+  }
+  const dTower = document.getElementById('dtower'), dShare = document.getElementById('dshare');
+  dShare.addEventListener('click', async () => {
+    const text = dailyShareText();
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); dShare.textContent = 'Copied!'; }
+    catch (e) {
+      try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); dShare.textContent = 'Copied!'; }
+      catch (e2) { dShare.textContent = 'Copy failed'; }
+    }
+    setTimeout(() => { dShare.textContent = 'Share'; }, 1800);
+  });
+  function dailyDone() {
+    over = true; clockOn = false;
+    const key = 'tilescraper-daily-' + dailyDay;
+    let prev = null;
+    try { prev = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+    const t = Math.round(elapsed * 10) / 10;
+    const better = !prev || t < prev.t || (t === prev.t && moves < prev.m);
+    if (better) { try { localStorage.setItem(key, JSON.stringify({ t, m: moves })); } catch (e) {} }
+    const bestT = better ? t : prev.t, bestM = better ? moves : prev.m;
+    overEl.querySelector('h2').textContent = 'All clear';
+    dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = false; overEl.classList.add('daily');
+    overText.innerHTML = 'Daily #' + dailyNo() + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + moves + ' moves<br>'
+      + (prev ? (better ? 'Your best today!' : 'Your best today: ' + fmtClock(bestT) + ' · ' + bestM + ' moves') : 'First run today');
+    iniEl.hidden = true; overBtns.hidden = false; statCopy.hidden = true;
+    sendStats('done');
+    overEl.hidden = false;
+    renderStats();
+    say('well done');
+  }
+
   function newGame() {
     if (mode === 'free' && !over) sendStats('new');   // free play ends when a new game starts
     mode = modeSel.value;
@@ -1843,7 +1993,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     gs = freshStats(); statCopy.hidden = true;
     freeSec = 0; lastMoveAt = 0; freeSent = false; sessionId = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     survive = false; trayEl.classList.remove('survive');
-    if (mode === 'timed') {
+    if (mode === 'timed' || mode === 'daily') {
       sel.value = '6'; sel.disabled = true;
       timeLeft = T_MAX; elapsed = 0; bestAtStart = best; bestCalled = false;
       timebar.hidden = false; timebar.classList.remove('free');
@@ -1851,6 +2001,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       sel.disabled = false;
       timebar.hidden = false; timebar.classList.add('free');
     }
+    timebar.classList.toggle('daily', mode === 'daily');
+    if (mode === 'daily') { dailyNew(); return; }
     const startLv = document.body.classList.contains('test') ? parseInt(document.getElementById('startlvl').value, 10) || 1 : 1;
     N = startLv >= 4 ? 7 : startLv >= 2 ? 6 : 5; level = startLv; pendingRung = -1; otStart = 0; prog = 0; streak = 0; bestStreak = 0; climbPts = 0; lastLine = [];
     try { music.setRate(1); } catch (e) {}
@@ -1874,6 +2026,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
   const trayEl = document.querySelector('.tray');
   function checkSurvive(quiet) {
+    if (mode === 'daily') { survive = false; trayEl.classList.remove('survive'); return; }
     const counts = Array(PALETTE.length).fill(0);
     grid.forEach(t => { if (t) counts[t.color]++; });
     const now = !counts.some(c => c >= 4);
@@ -1896,7 +2049,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   function move(idx) {
     if (busy || over || !grid[idx] || !adjacent(idx, hole)) return;
     busy = true;
-    if (mode === 'timed') startClock();
+    if (mode === 'timed' || mode === 'daily') startClock();
     const t = grid[idx], dest = hole;
     grid[hole] = t; grid[idx] = null;
     t.el.classList.add('moving');
@@ -1916,6 +2069,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   }
 
   function resolve(dest) {
+    if (mode === 'daily') { dailyResolve(dest); return; }
     const cols = colorsOf();
     // Only lines through the tile that just moved count.
     const lines = findLines(cols).filter(l => l.includes(dest));
@@ -2033,8 +2187,16 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     if (mEl) mEl.textContent = mult(nColors) > 1 ? '×' + mult(nColors) : '';
     elScore.textContent = fmt(score);
     elMoves.textContent = moves;
+    document.getElementById('scorek').textContent = mode === 'daily' ? 'Daily #' + dailyNo() : 'Score';
     try { renderStep(); } catch (e) {}
-    if (mode === 'timed') {
+    if (mode === 'daily') {
+      if (mEl) mEl.textContent = '';
+      elScore.textContent = dailyCleared + ' / 6';
+      let bt = null;
+      try { bt = JSON.parse(localStorage.getItem('tilescraper-daily-' + (dailyDay || dailyKey())) || 'null'); } catch (e) {}
+      elRatioK.textContent = 'Best today';
+      elRatio.textContent = bt ? fmtClock(bt.t) : '–';
+    } else if (mode === 'timed') {
       elRatioK.textContent = 'High score';
       elRatio.textContent = fmt(Math.max(best, score));
     } else {
@@ -2102,12 +2264,12 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
   // ---- Splash screen ----
   const splash = document.getElementById('splash');
-  const spFree = document.getElementById('sp-free'), spTimed = document.getElementById('sp-timed');
+  const spFree = document.getElementById('sp-free'), spTimed = document.getElementById('sp-timed'), spDaily = document.getElementById('sp-daily');
   const spNote = document.getElementById('sp-modenote'), spResume = document.getElementById('sp-resume');
   const testBox = document.getElementById('sp-testmode');
   const hsList = document.getElementById('hslist'), hsNote = document.getElementById('hsnote');
   let spMode = 'timed';
-  try { spMode = localStorage.getItem('slide4-mode') === 'free' ? 'free' : 'timed'; } catch (e) {}
+  try { const m = localStorage.getItem('slide4-mode'); spMode = m === 'free' || m === 'daily' ? m : 'timed'; } catch (e) {}
   try { testBox.checked = localStorage.getItem('slide4-test') === '1'; } catch (e) {}
   function applyTest() { document.body.classList.toggle('test', testBox.checked); }
   applyTest();
@@ -2119,12 +2281,16 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     spMode = m;
     spFree.setAttribute('aria-pressed', String(m === 'free'));
     spTimed.setAttribute('aria-pressed', String(m === 'timed'));
-    spNote.textContent = m === 'timed'
+    spDaily.setAttribute('aria-pressed', String(m === 'daily'));
+    spNote.textContent = m === 'daily'
+      ? 'Daily #' + dailyNo() + ': today\'s board, the same for everyone. Six colours, four tiles each. Line up a colour\'s four and they go dark. Clear all six as fast as you can.'
+      : m === 'timed'
       ? 'One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.'
       : 'No clock. You start with ' + (testBox.checked ? sel.value : 6) + ' colours, and another joins every 15,000 points.';
   }
   spFree.addEventListener('click', () => setSpMode('free'));
   spTimed.addEventListener('click', () => setSpMode('timed'));
+  spDaily.addEventListener('click', () => setSpMode('daily'));
   testBox.addEventListener('change', () => setSpMode(spMode));
   // Test mode is hidden; five quick taps on the version label (or ?test in the address) reveal it
   const verEl = document.getElementById('ver');
@@ -2186,7 +2352,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   spResume.addEventListener('click', () => {
     unlockSpeech(); if (soundBox.checked) audio(); wantMusic();
     hideSplash();
-    if (mode === 'timed' && elapsed > 0 && !over) startClock();
+    if ((mode === 'timed' || mode === 'daily') && elapsed > 0 && !over) startClock();
   });
   document.getElementById('menu').addEventListener('click', showSplash);
   document.getElementById('overmenu').addEventListener('click', showSplash);
@@ -2248,7 +2414,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   function demoStart() { demoStop(); demoRun(); }
   function demoStop() { demoTimers.forEach(clearTimeout); demoTimers = []; }
 
-  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung, otStart, prog, streak, climbPts }));
+  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung, otStart, prog, streak, climbPts, dailyDay, dailyLog }));
 
   function start(data) {
     if (data && data.cols && !data.over && data.cols.length === (data.N || 5) * (data.N || 5)) {
@@ -2260,7 +2426,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       otStart = data.otStart || 0; prog = data.prog || 0; streak = data.streak || 0; climbPts = data.climbPts ?? data.score ?? 0;
       rung = typeof data.rung === 'number' ? data.rung : Math.max(0, LADDER.findIndex(([l, c]) => l === level && c === nColors));
       timeLeft = data.timeLeft ?? T_MAX; elapsed = data.elapsed || 0; bestAtStart = best;
-      timebar.hidden = false; timebar.classList.toggle('free', mode !== 'timed');
+      timebar.hidden = false; timebar.classList.toggle('free', mode !== 'timed'); timebar.classList.toggle('daily', mode === 'daily');
+      if (mode === 'daily') { dailyCleared = Math.round(data.cols.filter(c => c === GREY).length / 4); dailyDay = data.dailyDay || dailyKey(); dailyLog = Array.isArray(data.dailyLog) ? data.dailyLog : []; }
       build(data.cols, data.hole);
       checkSurvive(true);
       renderStats(); renderLog();
