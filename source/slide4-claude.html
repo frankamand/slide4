@@ -419,6 +419,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 .tile.done b svg, body.ts-neon .tile.done b svg { display: none !important; }
 .timebar.daily .sb-track, .timebar.daily .tb-track { display: none; }
 .timebar.daily .tb-info { font-size: 0.95rem; }
+.tb-info span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .timebar.daily #tbsec { color: var(--fg); font-weight: 700; }
 
 /* Daily share tower */
@@ -578,7 +579,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.3';
+  const APP_VERSION = 'v3.4';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1404,8 +1405,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   function renderStep() {
     if (mode === 'daily') {
       timebar.classList.remove('soon');
-      tbSec.textContent = clockOn || elapsed > 0 ? fmtClock(elapsed) : 'Clock starts on your first move';
-      tbColors.textContent = dailyCleared + ' of 6 colours cleared';
+      tbSec.textContent = fmtClock(elapsed);
+      tbColors.textContent = DAILY_PAR[dailyNo()] ? 'par ' + DAILY_PAR[dailyNo()] + ' moves' : 'clear all six colours';
       return;
     }
     const f = stepFrac();
@@ -1869,6 +1870,9 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   // A line of a colour's four tiles turns them dark grey (neutral, never matches). Clear all six against the clock.
   let dailyCleared = 0, dailyDay = '', dailyLog = [];   // dailyLog: [colour, moves when cleared, vertical?] per cleared colour
   const GAME_URL = 'https://frankamand.github.io/slide4/';
+  // Par per daily number: the move count of an offline solver (a good solution, not proven the minimum).
+  const DAILY_PAR = { 1: 72, 2: 85, 3: 77, 4: 90, 5: 73, 6: 82, 7: 64 };
+  const parText = () => DAILY_PAR[dailyNo()] ? ' (par ' + DAILY_PAR[dailyNo()] + ')' : '';
   const SQUARES = ['🟥', '🟨', '🟩', '🟦', '🟪', '🟧'];
   // The tower: one floor per cleared colour, first cleared at the bottom; one block per 4 moves spent on it.
   function dailyTower() {
@@ -1877,7 +1881,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     return floors.reverse().join('\n');
   }
   function dailyShareText() {
-    return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves\n\n' + dailyTower() + '\n\n' + GAME_URL;
+    return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves' + parText() + '\n\n' + dailyTower() + '\n\n' + GAME_URL;
   }
   const DAILY_EPOCH = Date.UTC(2026, 9, 28);   // Daily #1 = 28 Oct 2026
   const dailyKey = () => new Date().toISOString().slice(0, 10);
@@ -1975,7 +1979,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     const bestT = better ? t : prev.t, bestM = better ? moves : prev.m;
     overEl.querySelector('h2').textContent = 'All clear';
     dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = false; overEl.classList.add('daily');
-    overText.innerHTML = 'Daily #' + dailyNo() + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + moves + ' moves<br>'
+    overText.innerHTML = 'Daily #' + dailyNo() + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + moves + ' moves' + parText() + '<br>'
       + (prev ? (better ? 'Your best today!' : 'Your best today: ' + fmtClock(bestT) + ' · ' + bestM + ' moves') : 'First run today');
     iniEl.hidden = true; overBtns.hidden = false; statCopy.hidden = true;
     sendStats('done');
