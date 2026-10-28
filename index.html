@@ -455,6 +455,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 .over.daily h2 { font-size: 1.6rem; }
 .over.daily p { line-height: 1.4; font-size: 0.9rem; }
 .over.daily .overbtns button { padding: 8px 14px; }
+.dexact { margin: 0; font-size: 0.75rem !important; color: var(--muted); }
 .dtower { margin: 0; font-size: 0.85rem; line-height: 1.15; letter-spacing: 0.05em; text-align: left; }
 #dshare { border-color: var(--cyan) !important; box-shadow: 0 0 12px rgba(57, 230, 255, 0.5) !important; }
 </style>
@@ -530,6 +531,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
         <textarea id="statcopytext" readonly rows="2" aria-label="Game stats"></textarea>
       </div>
       <pre class="dtower" id="dtower" hidden></pre>
+      <p class="dexact testonly" id="dexact" hidden></p>
       <div class="overbtns" id="overbtns">
         <button id="dshare" type="button" hidden>Share</button>
         <button id="again" type="button">Play again</button>
@@ -607,7 +609,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.4';
+  const APP_VERSION = 'v3.5';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1668,7 +1670,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
     const placed = mode === 'timed' ? addTimedScore(score, nColors, level) : { rank: -1 };
     overEl.querySelector('h2').textContent = 'Game over';
-    dTower.hidden = true; dShare.hidden = true; overEl.classList.remove('daily');
+    dTower.hidden = true; dShare.hidden = true; dExact.hidden = true; overEl.classList.remove('daily');
     overText.innerHTML = 'Score <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? 'New high score!' : 'High score ' + fmt(best));
     iniEl.hidden = true; overBtns.hidden = false;
     statCopy.hidden = true;
@@ -1983,7 +1985,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       }, 230);
     }, clearMs);
   }
-  const dTower = document.getElementById('dtower'), dShare = document.getElementById('dshare');
+  const dTower = document.getElementById('dtower'), dShare = document.getElementById('dshare'), dExact = document.getElementById('dexact');
   dShare.addEventListener('click', async () => {
     const text = dailyShareText();
     try {
@@ -2007,6 +2009,10 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     const bestT = better ? t : prev.t, bestM = better ? moves : prev.m;
     overEl.querySelector('h2').textContent = 'All clear';
     dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = false; overEl.classList.add('daily');
+    // test mode: the exact moves per colour behind the tower, in clearing order
+    let prevM = 0;
+    dExact.textContent = dailyLog.map(([c, m]) => { const n = m - prevM; prevM = m; return SQUARES[c] + ' ' + n; }).join(' · ');
+    dExact.hidden = false;
     overText.innerHTML = 'Daily #' + dailyNo() + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + moves + ' moves' + parText() + '<br>'
       + (prev ? (better ? 'Your best today!' : 'Your best today: ' + fmtClock(bestT) + ' · ' + bestM + ' moves') : 'First run today');
     iniEl.hidden = true; overBtns.hidden = false; statCopy.hidden = true;
