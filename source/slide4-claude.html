@@ -429,7 +429,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 .over.daily .overbtns button { padding: 8px 14px; }
 .over.daily .overbtns { gap: 6px; flex-wrap: nowrap; }
 .over.daily .overbtns button { padding: 7px 10px; font-size: 0.82rem; white-space: nowrap; }
-.dbest { display: flex; gap: 8px; justify-content: center; }
+.dbest { display: flex; gap: 6px 8px; justify-content: center; flex-wrap: wrap; }
 .dbest[hidden] { display: none; }
 .over .dbest button.mini { background: transparent; color: var(--cyan); border: 1px solid var(--line); box-shadow: none; padding: 4px 10px; font-size: 0.78rem; font-weight: 600; }
 .dexact { margin: 0; font-size: 0.75rem !important; color: var(--muted); }
@@ -520,7 +520,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       <div class="dbest" id="dbest" hidden>
         <button id="rfast" type="button" class="mini">▶ fastest</button>
         <button id="rfew" type="button" class="mini">▶ fewest moves</button>
-        <button id="sbest" type="button" class="mini" hidden>Share best</button>
+        <button id="sbest" type="button" class="mini" hidden>Share fastest</button>
+        <button id="sfew" type="button" class="mini" hidden>Share fewest</button>
       </div>
       <div class="overbtns" id="overbtns">
         <button id="dshare" type="button" hidden>Share</button>
@@ -601,7 +602,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.12';
+  const APP_VERSION = 'v3.13';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -2117,9 +2118,11 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     document.getElementById('spoilwatch').onclick = () => { spoilEl.hidden = true; dailyReplay(run); };
   }
   dShare.addEventListener('click', () => shareOut(dailyShareText(), dShare, 'Share'));
-  // Share best: today's fastest run (the one BEST TODAY shows), offered when this run isn't it.
-  const sBest = document.getElementById('sbest');
-  sBest.addEventListener('click', () => { const b = dailyBests(dailyDay); if (b.fast) shareOut(runShareText(dailyDay, b.fast), sBest, 'Share best'); });
+  // Share fastest / Share fewest: today's two bests, each offered when this run isn't that best
+  // (when one run holds both, a single "Share best").
+  const sBest = document.getElementById('sbest'), sFew = document.getElementById('sfew');
+  sBest.addEventListener('click', () => { const b = dailyBests(dailyDay); if (b.fast) shareOut(runShareText(dailyDay, b.fast), sBest, sBest.textContent); });
+  sFew.addEventListener('click', () => { const b = dailyBests(dailyDay); if (b.few) shareOut(runShareText(dailyDay, b.few), sFew, 'Share fewest'); });
   // Bests per day: the fastest run (moves break ties) and the run with fewest moves (time breaks ties), each with its taps.
   // Older entries were a plain {t, m}: read as both bests, without a replay.
   function dailyBests(day) {
@@ -2138,7 +2141,9 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     rw.hidden = !(b.few && b.few.moves) || sameAsFast || sameRun(b.few, cur);
     rf.textContent = sameAsFast ? '▶ best run' : '▶ fastest';
     sBest.hidden = !b.fast || sameRun(b.fast, cur);
-    document.getElementById('dbest').hidden = rf.hidden && rw.hidden && sBest.hidden;
+    sFew.hidden = !b.few || sameAsFast || sameRun(b.few, cur);
+    sBest.textContent = sameAsFast ? 'Share best' : 'Share fastest';
+    document.getElementById('dbest').hidden = rf.hidden && rw.hidden && sBest.hidden && sFew.hidden;
   }
   function dailyDone() {
     over = true; clockOn = false;
