@@ -1884,7 +1884,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   let dailyMoves = [], replaying = false, replayRun = null;   // test mode: every tapped tile, so a run can be watched again   // dailyLog: [colour, moves when cleared, vertical?] per cleared colour
   const GAME_URL = 'https://frankamand.github.io/slide4/';
   // Par per daily number: the move count of an offline solver (a good solution, not proven the minimum).
-  const DAILY_PAR = { 1: 72, 2: 85, 3: 77, 4: 90, 5: 73, 6: 82, 7: 64 };
+  const DAILY_PAR = { 1: 72, 2: 85, 3: 77, 4: 90, 5: 73, 6: 82, 7: 64, 8: 68 };
   const parText = () => DAILY_PAR[dailyNo()] ? ' (par ' + DAILY_PAR[dailyNo()] + ')' : '';
   const SQUARES = ['🟥', '🟨', '🟩', '🟦', '🟪', '🟧'];
   // The tower: one floor per cleared colour, first cleared at the bottom; one block per 4 moves spent on it.
