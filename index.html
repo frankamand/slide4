@@ -517,6 +517,14 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     <div class="timepop" id="timepop" aria-hidden="true"></div>
     <div class="board" id="board" aria-label="5 by 5 sliding board"></div>
     <div class="banner" id="banner" aria-live="polite"></div>
+    <div class="over" id="spoil" hidden>
+      <h2>Spoiler</h2>
+      <p id="spoiltext"></p>
+      <div class="overbtns">
+        <button id="spoilplay" type="button">Play first</button>
+        <button id="spoilwatch" type="button" class="ghost">Watch anyway</button>
+      </div>
+    </div>
     <div class="over" id="over" hidden>
       <h2>Game over</h2>
       <p id="overtext"></p>
@@ -534,6 +542,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       <p class="dexact testonly" id="dexact" hidden></p>
       <div class="overbtns" id="overbtns">
         <button id="dshare" type="button" hidden>Share</button>
+        <button id="dreplay" type="button" hidden>Replay</button>
         <button id="again" type="button">Play again</button>
         <button id="overmenu" type="button" class="ghost">Menu</button>
       </div>
@@ -609,7 +618,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.5';
+  const APP_VERSION = 'v3.7';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -787,7 +796,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     };
     titleRaf = requestAnimationFrame(step);
   }
-  function showTitle() {
+  function showTitle(after) {
     titleEl.hidden = false; titleEl.classList.remove('gone');
     if (!titleRaf) titleLoop(performance.now());
     const go = e => {
@@ -796,6 +805,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       titleEl.classList.add('gone');
       if (spFloor) drawFloor(spFloor, 0);
       setTimeout(() => { titleEl.hidden = true; }, 460);
+      if (after) after();
     };
     titleEl.addEventListener('pointerdown', go); titleEl.addEventListener('keydown', go);
     try { titleEl.focus({ preventScroll: true }); } catch (e) {}
@@ -1670,7 +1680,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
     const placed = mode === 'timed' ? addTimedScore(score, nColors, level) : { rank: -1 };
     overEl.querySelector('h2').textContent = 'Game over';
-    dTower.hidden = true; dShare.hidden = true; dExact.hidden = true; overEl.classList.remove('daily');
+    dTower.hidden = true; dShare.hidden = true; dExact.hidden = true; dReplay.hidden = true; overEl.classList.remove('daily');
     overText.innerHTML = 'Score <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? 'New high score!' : 'High score ' + fmt(best));
     iniEl.hidden = true; overBtns.hidden = false;
     statCopy.hidden = true;
@@ -1898,7 +1908,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
   // ---- Daily challenge: one seeded 5x5 board per UTC day, six colours of four tiles each.
   // A line of a colour's four tiles turns them dark grey (neutral, never matches). Clear all six against the clock.
-  let dailyCleared = 0, dailyDay = '', dailyLog = [];   // dailyLog: [colour, moves when cleared, vertical?] per cleared colour
+  let dailyCleared = 0, dailyDay = '', dailyLog = [];
+  let dailyMoves = [], replaying = false, replayRun = null;   // test mode: every tapped tile, so a run can be watched again   // dailyLog: [colour, moves when cleared, vertical?] per cleared colour
   const GAME_URL = 'https://frankamand.github.io/slide4/';
   // Par per daily number: the move count of an offline solver (a good solution, not proven the minimum).
   const DAILY_PAR = { 1: 72, 2: 85, 3: 77, 4: 90, 5: 73, 6: 82, 7: 64 };
@@ -1911,7 +1922,36 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     return floors.reverse().join('\n');
   }
   function dailyShareText() {
-    return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves' + parText() + '\n\n' + dailyTower() + '\n\n' + GAME_URL;
+    return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves' + parText() + '\n\n' + dailyTower()
+      + '\n\nWatch my run: ' + replayLink(dailyDay, dailyMoves);
+  }
+  // Replay links: ?replay=<daily no>.<moves>.<base64url>, each move 2 bits (which side of the gap the tapped tile was on).
+  const keyForNo = n => new Date(DAILY_EPOCH + (n - 1) * 86400000).toISOString().slice(0, 10);
+  function replayLink(day, taps) {
+    let h = dailyBoard(day).hole;
+    const bytes = new Uint8Array(Math.ceil(taps.length / 4));
+    taps.forEach((t, i) => { const d = t === h - 5 ? 0 : t === h + 5 ? 1 : t === h - 1 ? 2 : 3; bytes[i >> 2] |= d << ((i & 3) * 2); h = t; });
+    const b64 = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return GAME_URL + '?replay=' + dailyNo(day) + '.' + taps.length + '.' + b64;
+  }
+  function parseReplay(q) {
+    const m = /^(\d+)\.(\d+)\.([A-Za-z0-9_-]+)$/.exec(q || '');
+    if (!m) return null;
+    const n = +m[1], count = +m[2];
+    if (n < 1 || count < 1 || count > 4000) return null;
+    const day = keyForNo(n);
+    if (day > dailyKey()) return null;          // no replays of future boards
+    let bin;
+    try { bin = atob(m[3].replace(/-/g, '+').replace(/_/g, '/')); } catch (e) { return null; }
+    let h = dailyBoard(day).hole;
+    const taps = [];
+    for (let i = 0; i < count; i++) {
+      const d = ((bin.charCodeAt(i >> 2) || 0) >> ((i & 3) * 2)) & 3;
+      const t = d === 0 ? h - 5 : d === 1 ? h + 5 : d === 2 ? h - 1 : h + 1;
+      if (t < 0 || t > 24 || (d >= 2 && Math.floor(t / 5) !== Math.floor(h / 5))) return null;
+      taps.push(t); h = t;
+    }
+    return { day, moves: taps };
   }
   const DAILY_EPOCH = Date.UTC(2026, 9, 28);   // Daily #1 = 28 Oct 2026
   const dailyKey = () => new Date().toISOString().slice(0, 10);
@@ -1943,10 +1983,11 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     }
     return null;
   }
-  function dailyNew() {
+  function dailyNew(day) {
+    over = false; overEl.hidden = true;
     sel.value = '6'; sel.disabled = true;
     N = 5; level = 1; rung = 0; pendingRung = -1; otStart = 0; prog = 0; streak = 0; bestStreak = 0; climbPts = 0; lastLine = [];
-    nColors = 6; elapsed = 0; dailyCleared = 0; dailyDay = dailyKey(); dailyLog = [];
+    nColors = 6; elapsed = 0; dailyCleared = 0; dailyDay = day || dailyKey(); dailyLog = []; dailyMoves = [];
     try { music.setRate(1); } catch (e) {}
     buildWells();
     const b = dailyBoard(dailyDay);
@@ -1986,6 +2027,39 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     }, clearMs);
   }
   const dTower = document.getElementById('dtower'), dShare = document.getElementById('dshare'), dExact = document.getElementById('dexact');
+  const dReplay = document.getElementById('dreplay');
+  // Replay (test mode): reset to the day's board and play the recorded taps back, about four moves a second.
+  async function dailyReplay(given) {
+    let run = given && given.moves ? given : replayRun;
+    if (!run) { try { run = JSON.parse(localStorage.getItem('tilescraper-lastrun') || 'null'); } catch (e) {} }
+    if (!run || !run.moves || !run.moves.length) return;
+    overEl.hidden = true; dReplay.hidden = true;
+    modeSel.value = 'daily'; mode = 'daily';
+    timebar.hidden = false; timebar.classList.remove('free'); timebar.classList.add('daily');
+    dailyNew(run.day); over = false;
+    replaying = true;
+    banner('Replay #' + dailyNo(run.day));
+    await new Promise(r => setTimeout(r, 900));
+    for (const idx of run.moves) {
+      if (!replaying || mode !== 'daily') return;
+      while (busy) await new Promise(r => setTimeout(r, 40));
+      move(idx, true);
+      await new Promise(r => setTimeout(r, 260));
+    }
+  }
+  dReplay.addEventListener('click', () => dailyReplay());
+  // Opening a replay link: watch it, after a spoiler check when it is today's board and you haven't played it yet.
+  const spoilEl = document.getElementById('spoil');
+  function openReplay(run) {
+    const today = run.day === dailyKey();
+    let played = false;
+    try { played = !!localStorage.getItem('tilescraper-daily-' + run.day); } catch (e) {}
+    if (!today || played) { dailyReplay(run); return; }
+    document.getElementById('spoiltext').textContent = 'This replay shows a way through today\'s Daily #' + dailyNo(run.day) + '. Play it yourself first, or watch anyway?';
+    spoilEl.hidden = false;
+    document.getElementById('spoilplay').onclick = () => { spoilEl.hidden = true; modeSel.value = 'daily'; newGame(); };
+    document.getElementById('spoilwatch').onclick = () => { spoilEl.hidden = true; dailyReplay(run); };
+  }
   dShare.addEventListener('click', async () => {
     const text = dailyShareText();
     try {
@@ -2000,6 +2074,18 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   });
   function dailyDone() {
     over = true; clockOn = false;
+    if (replaying) {
+      replaying = false;
+      overEl.querySelector('h2').textContent = 'Replay done';
+      overText.innerHTML = 'Daily #' + dailyNo() + '<br>' + moves + ' moves' + parText();
+      document.getElementById('again').textContent = 'Play today\'s daily';
+      dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = true; dReplay.hidden = false; overEl.classList.add('daily');
+      overEl.hidden = false; renderStats();
+      return;
+    }
+    replayRun = { day: dailyDay, moves: dailyMoves.slice() };
+    try { localStorage.setItem('tilescraper-lastrun', JSON.stringify(replayRun)); } catch (e) {}
+    dReplay.hidden = false;
     const key = 'tilescraper-daily-' + dailyDay;
     let prev = null;
     try { prev = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
@@ -2023,6 +2109,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   }
 
   function newGame() {
+    replaying = false;
+    document.getElementById('again').textContent = 'Play again';
     if (mode === 'free' && !over) sendStats('new');   // free play ends when a new game starts
     mode = modeSel.value;
     try { localStorage.setItem('slide4-mode', mode); } catch (e) {}
@@ -2084,8 +2172,10 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     grid.forEach((t, i) => { if (t) t.el.classList.toggle('can', adjacent(i, hole)); });
   }
 
-  function move(idx) {
+  function move(idx, fromReplay) {
+    if (replaying && !fromReplay) return;
     if (busy || over || !grid[idx] || !adjacent(idx, hole)) return;
+    if (mode === 'daily') dailyMoves.push(idx);
     busy = true;
     if (mode === 'timed' || mode === 'daily') startClock();
     const t = grid[idx], dest = hole;
@@ -2452,7 +2542,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   function demoStart() { demoStop(); demoRun(); }
   function demoStop() { demoTimers.forEach(clearTimeout); demoTimers = []; }
 
-  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung, otStart, prog, streak, climbPts, dailyDay, dailyLog }));
+  window.claude?.hot?.snapshot?.(() => ({ nColors, cols: colorsOf(), hole, score, moves, mode, timeLeft, elapsed, over, freeBase, freeNextAt, N, level, rung, otStart, prog, streak, climbPts, dailyDay, dailyLog, dailyMoves }));
 
   function start(data) {
     if (data && data.cols && !data.over && data.cols.length === (data.N || 5) * (data.N || 5)) {
@@ -2465,7 +2555,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       rung = typeof data.rung === 'number' ? data.rung : Math.max(0, LADDER.findIndex(([l, c]) => l === level && c === nColors));
       timeLeft = data.timeLeft ?? T_MAX; elapsed = data.elapsed || 0; bestAtStart = best;
       timebar.hidden = false; timebar.classList.toggle('free', mode !== 'timed'); timebar.classList.toggle('daily', mode === 'daily');
-      if (mode === 'daily') { dailyCleared = Math.round(data.cols.filter(c => c === GREY).length / 4); dailyDay = data.dailyDay || dailyKey(); dailyLog = Array.isArray(data.dailyLog) ? data.dailyLog : []; }
+      if (mode === 'daily') { dailyCleared = Math.round(data.cols.filter(c => c === GREY).length / 4); dailyDay = data.dailyDay || dailyKey(); dailyLog = Array.isArray(data.dailyLog) ? data.dailyLog : []; dailyMoves = Array.isArray(data.dailyMoves) ? data.dailyMoves : []; }
       build(data.cols, data.hole);
       checkSurvive(true);
       renderStats(); renderLog();
@@ -2475,10 +2565,15 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       modeSel.value = spMode;
       newGame();
       showSplash();
-      showTitle();
+      showTitle(linkRun ? () => { hideSplash(); unlockSpeech(); if (soundBox.checked) audio(); wantMusic(); openReplay(linkRun); } : null);
     }
   }
-  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+  let linkRun = null;
+  try {
+    const q = new URLSearchParams(location.search).get('replay');
+    if (q) { linkRun = parseReplay(q); history.replaceState(null, '', location.pathname); }
+  } catch (e) {}
+  window.claude?.hot?.ready ? window.claude.hot.ready(d => start(linkRun ? {} : d)) : start(linkRun ? {} : (window.claude?.hot?.data ?? {}));
 })();
 </script>
 
