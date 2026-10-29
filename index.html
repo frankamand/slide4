@@ -548,6 +548,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
       <div class="dbest" id="dbest" hidden>
         <button id="rfast" type="button" class="mini">▶ fastest</button>
         <button id="rfew" type="button" class="mini">▶ fewest moves</button>
+        <button id="sbest" type="button" class="mini" hidden>Share best</button>
       </div>
       <div class="overbtns" id="overbtns">
         <button id="dshare" type="button" hidden>Share</button>
@@ -627,7 +628,7 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.9';
+  const APP_VERSION = 'v3.10';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1931,14 +1932,59 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   const parText = () => DAILY_PAR[dailyNo()] ? ' (par ' + DAILY_PAR[dailyNo()] + ')' : '';
   const SQUARES = ['🟥', '🟨', '🟩', '🟦', '🟪', '🟧'];
   // The tower: one floor per cleared colour, first cleared at the bottom; one block per 4 moves spent on it.
-  function dailyTower() {
+  function dailyTower(log = dailyLog) {
     let prev = 0;
-    const floors = dailyLog.map(([c, m]) => { const n = Math.max(1, Math.min(10, Math.round((m - prev) / 4))); prev = m; return SQUARES[c].repeat(n); });
+    const floors = log.map(([c, m]) => { const n = Math.max(1, Math.min(10, Math.round((m - prev) / 4))); prev = m; return SQUARES[c].repeat(n); });
     return floors.reverse().join('\n');
   }
   function dailyShareText() {
     return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves' + parText() + '\n\n' + dailyTower()
       + '\n\nWatch my run: ' + replayLink(dailyDay, dailyMoves);
+  }
+  // A stored run ({t, m, moves}) shared like a fresh one. The tower is rebuilt by playing its taps on the day's board;
+  // old bests saved without taps share time and moves only.
+  function runShareText(day, run) {
+    const head = 'Tilescraper Daily #' + dailyNo(day) + '\n⏱ ' + fmtClock(run.t) + ' · ' + run.m + ' moves' + parText();
+    if (!run.moves || !run.moves.length) return head + '\n\n' + GAME_URL;
+    return head + '\n\n' + dailyTower(runLog(day, run.moves)) + '\n\nWatch my run: ' + replayLink(day, run.moves);
+  }
+  // Plays taps on the day's board without animation and returns the clear log: [colour, moves when cleared] per line.
+  function runLog(day, taps) {
+    const b = dailyBoard(day), cols = b.cols.slice(), log = [];
+    let h = b.hole;
+    const lineThrough = (dest) => {
+      const out = [], r = Math.floor(dest / 5), c = dest % 5;
+      [[0, 1, 2, 3, 4].map(k => r * 5 + k), [0, 1, 2, 3, 4].map(k => k * 5 + c)].forEach(idxs => {
+        let start = 0;
+        for (let k = 1; k <= 5; k++) {
+          if (k === 5 || cols[idxs[k]] === null || cols[idxs[k]] !== cols[idxs[start]]) {
+            const seg = idxs.slice(start, k), v = cols[idxs[start]];
+            if (v !== null && v !== GREY && seg.length >= 4 && seg.includes(dest)) out.push(seg);
+            start = k;
+          }
+        }
+      });
+      return out;
+    };
+    taps.forEach((t, i) => {
+      const dest = h;
+      cols[dest] = cols[t]; cols[t] = null; h = t;
+      const lines = lineThrough(dest);
+      lines.forEach(l => log.push([cols[l[0]], i + 1]));
+      lines.flat().forEach(j => { cols[j] = GREY; });
+    });
+    return log;
+  }
+  async function shareOut(text, btn, label) {
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied!'; }
+    catch (e) {
+      try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); btn.textContent = 'Copied!'; }
+      catch (e2) { btn.textContent = 'Copy failed'; }
+    }
+    setTimeout(() => { btn.textContent = label; }, 1800);
   }
   // Replay links: ?replay=<daily no>.<moves>.<base64url>, each move 2 bits (which side of the gap the tapped tile was on).
   const keyForNo = n => new Date(DAILY_EPOCH + (n - 1) * 86400000).toISOString().slice(0, 10);
@@ -2077,18 +2123,10 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     document.getElementById('spoilplay').onclick = () => { spoilEl.hidden = true; modeSel.value = 'daily'; newGame(); };
     document.getElementById('spoilwatch').onclick = () => { spoilEl.hidden = true; dailyReplay(run); };
   }
-  dShare.addEventListener('click', async () => {
-    const text = dailyShareText();
-    try {
-      if (navigator.share) { await navigator.share({ text }); return; }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
-    try { await navigator.clipboard.writeText(text); dShare.textContent = 'Copied!'; }
-    catch (e) {
-      try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); dShare.textContent = 'Copied!'; }
-      catch (e2) { dShare.textContent = 'Copy failed'; }
-    }
-    setTimeout(() => { dShare.textContent = 'Share'; }, 1800);
-  });
+  dShare.addEventListener('click', () => shareOut(dailyShareText(), dShare, 'Share'));
+  // Share best: today's fastest run (the one BEST TODAY shows), offered when this run isn't it.
+  const sBest = document.getElementById('sbest');
+  sBest.addEventListener('click', () => { const b = dailyBests(dailyDay); if (b.fast) shareOut(runShareText(dailyDay, b.fast), sBest, 'Share best'); });
   // Bests per day: the fastest run (moves break ties) and the run with fewest moves (time breaks ties), each with its taps.
   // Older entries were a plain {t, m}: read as both bests, without a replay.
   function dailyBests(day) {
@@ -2106,7 +2144,8 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     rf.hidden = !(b.fast && b.fast.moves) || sameRun(b.fast, cur);
     rw.hidden = !(b.few && b.few.moves) || sameAsFast || sameRun(b.few, cur);
     rf.textContent = sameAsFast ? '▶ best run' : '▶ fastest';
-    document.getElementById('dbest').hidden = rf.hidden && rw.hidden;
+    sBest.hidden = !b.fast || sameRun(b.fast, cur);
+    document.getElementById('dbest').hidden = rf.hidden && rw.hidden && sBest.hidden;
   }
   function dailyDone() {
     over = true; clockOn = false;
