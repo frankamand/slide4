@@ -622,13 +622,14 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
     </div>
 
     <label class="sp-test" for="sp-testmode"><input type="checkbox" id="sp-testmode"> Test mode <span>colour count, sound and voice settings, stats</span></label>
+    <button type="button" id="sp-resetdaily" class="ghost testonly">Reset today's daily</button>
     <p class="sp-copy">© 2026 Frank Amand. All rights reserved.</p>
   </div>
 </div>
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.11';
+  const APP_VERSION = 'v3.12';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -2504,6 +2505,24 @@ body.ts-neon .tile.stone b svg { filter: none; fill: #34363a; }
   try { const m = localStorage.getItem('slide4-mode'); spMode = m === 'free' || m === 'daily' ? m : 'timed'; } catch (e) {}
   try { testBox.checked = localStorage.getItem('slide4-test') === '1'; } catch (e) {}
   function applyTest() { document.body.classList.toggle('test', testBox.checked); }
+  // Test mode: forget today's daily on this device (bests and last run), so it counts as not yet played. Tap twice.
+  const resetDailyBtn = document.getElementById('sp-resetdaily'), RESET_LABEL = 'Reset today\'s daily';
+  let resetArm = 0;
+  resetDailyBtn.addEventListener('click', () => {
+    if (!resetArm) { resetDailyBtn.textContent = 'Tap again to reset'; resetArm = setTimeout(() => { resetArm = 0; resetDailyBtn.textContent = RESET_LABEL; }, 3000); return; }
+    clearTimeout(resetArm); resetArm = 0;
+    const today = dailyKey();
+    try {
+      localStorage.removeItem('tilescraper-daily-' + today);
+      const lr = JSON.parse(localStorage.getItem('tilescraper-lastrun') || 'null');
+      if (!lr || lr.day === today) localStorage.removeItem('tilescraper-lastrun');
+    } catch (e) {}
+    replayRun = null;
+    if (mode === 'daily') { clockOn = false; dailyNew(today); spResume.hidden = true; }
+    renderStats();
+    resetDailyBtn.textContent = 'Daily reset';
+    setTimeout(() => { resetDailyBtn.textContent = RESET_LABEL; }, 1800);
+  });
   applyTest();
   testBox.addEventListener('change', () => {
     applyTest();
