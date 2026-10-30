@@ -480,13 +480,11 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 .toolbar > [hidden] { display: none; }
 .toolbar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .toolbar #menu { border: 2px solid var(--neon); background: transparent; box-shadow: 0 0 10px rgba(255, 79, 163, 0.45); }
-.tbtn input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
-.toolbar > .tbtn { color: var(--muted); }
-.tbtn .on { display: none; }
-.tbtn:has(input:checked) { color: var(--fg); border-color: var(--cyan); box-shadow: 0 0 10px rgba(57, 230, 255, 0.45); }
-.tbtn:has(input:checked) .on { display: inline; }
-.tbtn:has(input:checked) .off, .tbtn:has(input:checked) .slash { display: none; }
-.tbtn:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Sound button: cycles music + sound → sound only → silent; the label always says the current state */
+#soundmode svg { display: none; }
+#soundmode[data-state="all"] .i-all, #soundmode[data-state="sound"] .i-sound, #soundmode[data-state="silent"] .i-silent { display: block; }
+.toolbar #soundmode[data-state="all"] { border-color: var(--cyan); box-shadow: 0 0 10px rgba(57, 230, 255, 0.45); }
+.toolbar #soundmode[data-state="silent"] { color: var(--muted); }
 
 /* Share screen: pick a run, see exactly what will be shared, share it or watch it */
 .sharescr { z-index: 40; }
@@ -526,6 +524,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       <select id="tilestyle"><option value="plain">Plain</option><option value="fluo">80s fluo</option><option value="neon">Neon</option></select>
     </label>
     <label class="testonly" for="sound"><input type="checkbox" id="sound" checked> Sound</label>
+    <label class="testonly" for="music"><input type="checkbox" id="music"> Music</label>
     <span class="voicepick" id="voicepick">
       <label class="sel" for="voice">Voice
         <select id="voice">
@@ -588,7 +587,12 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 
   <nav class="toolbar" aria-label="Game controls">
     <button id="newgame" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></svg><span>New game</span></button>
-    <label class="tbtn" for="music"><input type="checkbox" id="music"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path class="slash" d="M3 3l18 18"/></svg><span class="on">Music on</span><span class="off">Music off</span></label>
+    <button id="soundmode" type="button" data-state="sound">
+      <svg class="i-all" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+      <svg class="i-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+      <svg class="i-silent" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+      <span id="soundlabel">FX only</span>
+    </button>
     <button id="fs" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Full screen</span></button>
     <button id="menu" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
   </nav>
@@ -689,7 +693,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.16';
+  const APP_VERSION = 'v3.17';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1306,6 +1310,32 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     try { localStorage.setItem('slide4-music', musicBox.checked ? '1' : '0'); } catch (e) {}
     try { musicBox.checked ? music.start() : music.stop(); } catch (err) { console.warn(err); }
   });
+  // One button for sound: Music & FX (voice counts as FX) → FX only → Mute.
+  // The two test-mode checkboxes stay the source of truth; the button sets them.
+  const soundBtn = document.getElementById('soundmode'), soundLabel = document.getElementById('soundlabel');
+  const SOUND_LABEL = { all: 'Music & FX', sound: 'FX only', silent: 'Mute' };
+  const soundState = () => !soundBox.checked ? 'silent' : musicBox.checked ? 'all' : 'sound';
+  function renderSoundBtn() {
+    const st = soundState();
+    soundBtn.dataset.state = st; soundLabel.textContent = SOUND_LABEL[st];
+    soundBtn.setAttribute('aria-label', 'Sound: ' + SOUND_LABEL[st] + '. Tap to change');
+  }
+  function setSoundState(st) {
+    const snd = st !== 'silent', mus = st === 'all';
+    if (soundBox.checked !== snd) { soundBox.checked = snd; soundBox.dispatchEvent(new Event('change')); }
+    if (musicBox.checked !== mus) { musicBox.checked = mus; musicBox.dispatchEvent(new Event('change')); }
+    if (snd) { try { audio(); } catch (e) {} }
+    renderSoundBtn();
+  }
+  soundBtn.addEventListener('click', () => {
+    const st = soundState();
+    setSoundState(st === 'all' ? 'sound' : st === 'sound' ? 'silent' : 'all');
+  });
+  soundBox.addEventListener('change', renderSoundBtn);
+  musicBox.addEventListener('change', renderSoundBtn);
+  renderSoundBtn();
+  // iPhone/iPad Safari: obey the side silent switch and let the player's own audio keep playing.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {}
   function wantMusic() { if (musicBox.checked && !music.playing && !document.hidden) { try { music.start(); } catch (err) { console.warn(err); } } }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { if (music.playing) music.stop(); } else if (musicBox.checked && ac) wantMusic();
