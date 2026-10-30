@@ -610,7 +610,6 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
         <button id="dshare" type="button" hidden>Share</button>
         <button id="dreplay" type="button" hidden>Replay</button>
         <button id="again" type="button">Play again</button>
-        <button id="overmenu" type="button" class="ghost">Menu</button>
       </div>
     </div>
   </div>
@@ -718,7 +717,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.15';
+  const APP_VERSION = 'v3.16';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -2836,7 +2835,6 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     if ((mode === 'timed' || mode === 'daily') && elapsed > 0 && !over) startClock();
   });
   document.getElementById('menu').addEventListener('click', showSplash);
-  document.getElementById('overmenu').addEventListener('click', showSplash);
 
   // ---- Animated demo on the splash: scene 1 makes a four, scene 2 a five that wins time ----
   const demo = document.getElementById('demo'), demoCap = document.getElementById('democap');
