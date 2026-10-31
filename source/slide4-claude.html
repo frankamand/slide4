@@ -505,10 +505,15 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   .toolbar svg { width: 18px; height: 18px; }
 }
 
+/* Language switch on the menu screen */
+.sp-lang { display: flex; justify-content: center; gap: 6px; }
+.sp-lang button { padding: 6px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 9px; color: var(--muted); background: transparent; border: 1px solid var(--line); }
+.sp-lang button[aria-pressed="true"] { color: var(--bg); background: var(--cyan); border-color: var(--cyan); }
+
 /* Share screen: pick a run, see exactly what will be shared, share it or watch it */
 .sharescr { z-index: 40; }
 .sh-head { text-align: center; }
-.sh-head h2 { margin: 0; font-family: var(--font-logo); font-weight: 400; font-size: clamp(1.8rem, 9vw, 2.4rem); color: var(--neon); text-shadow: 0 0 14px rgba(255, 79, 163, 0.7); }
+.sh-head h2 { margin: 0; font-family: var(--font-logo); font-weight: 400; font-size: clamp(1.4rem, 7.5vw, 2.4rem); color: var(--neon); text-shadow: 0 0 14px rgba(255, 79, 163, 0.7); }
 .sh-head p { margin: 8px 0 0; color: var(--cyan); letter-spacing: 0.2em; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; }
 .sh-card { background: var(--tray); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .sh-card .sh-line { margin: 0; font-family: var(--font-num); font-size: 1rem; text-align: center; line-height: 1.5; }
@@ -558,7 +563,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 
   <div class="hud" id="hud">
     <div class="stat"><span class="k"><span id="scorek">Score</span> <span class="mult" id="mult"></span></span><span class="v" id="score">0</span></div>
-    <div class="stat"><span class="k">Moves</span><span class="v" id="moves">0</span></div>
+    <div class="stat"><span class="k" data-t>Moves</span><span class="v" id="moves">0</span></div>
     <div class="stat"><span class="k" id="ratiok">Moves / 1000</span><span class="v" id="ratio">–</span><span class="cdots" id="cdots" role="img" aria-label="No colours cleared yet" hidden></span></div>
   </div>
 
@@ -574,46 +579,46 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     <div class="board" id="board" aria-label="5 by 5 sliding board"></div>
     <div class="banner" id="banner" aria-live="polite"></div>
     <div class="over" id="spoil" hidden>
-      <h2>Spoiler</h2>
+      <h2 data-t>Spoiler</h2>
       <p id="spoiltext"></p>
       <div class="overbtns">
-        <button id="spoilplay" type="button">Play first</button>
-        <button id="spoilwatch" type="button" class="ghost">Watch anyway</button>
+        <button id="spoilplay" type="button" data-t>Play first</button>
+        <button id="spoilwatch" type="button" class="ghost" data-t>Watch anyway</button>
       </div>
     </div>
     <div class="over" id="over" hidden>
       <h2>Game over</h2>
       <p id="overtext"></p>
       <div class="initials" id="initials" hidden>
-        <p class="ini-head">Top five! Enter your initials</p>
+        <p class="ini-head" data-t>Top five! Enter your initials</p>
         <div class="wheels" id="wheels"></div>
         <button id="initok" type="button" class="play">OK</button>
       </div>
       <div class="statcopy" id="statcopy" hidden>
-        <p>Your stats couldn't be sent from here. Copy them and send them to Frank:</p>
-        <button id="statcopybtn" type="button">Copy stats</button>
+        <p data-t>Your stats couldn't be sent from here. Copy them and send them to Frank:</p>
+        <button id="statcopybtn" type="button" data-t>Copy stats</button>
         <textarea id="statcopytext" readonly rows="2" aria-label="Game stats"></textarea>
       </div>
       <pre class="dtower" id="dtower" hidden></pre>
       <p class="dexact testonly" id="dexact" hidden></p>
       <div class="overbtns" id="overbtns">
-        <button id="dshare" type="button" hidden>Share</button>
-        <button id="dreplay" type="button" hidden>Replay</button>
+        <button id="dshare" type="button" hidden data-t>Share</button>
+        <button id="dreplay" type="button" hidden data-t>Replay</button>
         <button id="again" type="button">Play again</button>
       </div>
     </div>
   </div>
 
   <nav class="toolbar" aria-label="Game controls">
-    <button id="newgame" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></svg><span>New game</span></button>
+    <button id="newgame" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></svg><span data-t>New game</span></button>
     <button id="soundmode" type="button" data-state="sound">
       <svg class="i-all" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
       <svg class="i-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>
       <svg class="i-silent" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
       <span id="soundlabel">FX only</span>
     </button>
-    <button id="fs" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Full screen</span></button>
-    <button id="menu" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
+    <button id="fs" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span data-t>Full screen</span></button>
+    <button id="menu" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span data-t>Menu</span></button>
   </nav>
 
   <details class="more testonly" id="more">
@@ -637,27 +642,27 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 </div>
 
 <div class="ver" id="ver" aria-hidden="true"></div>
-<div class="title" id="title" role="button" tabindex="0" aria-label="Tilescraper. Tap to start" hidden>
+<div class="title" id="title" role="button" tabindex="0" aria-label="Tilescraper. Tap to start" data-ta hidden>
   <div class="sp-scene" id="titlescene" aria-hidden="true"></div>
-  <div class="title-logo" aria-hidden="true"><h2 class="tlogo">TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
-  <div class="title-tap" aria-hidden="true">TAP TO START</div>
+  <div class="title-logo" aria-hidden="true"><h2 class="tlogo">TILESCRAPER</h2><p data-t>Match-4 sliding puzzle</p></div>
+  <div class="title-tap" aria-hidden="true" data-t>TAP TO START</div>
   <div class="title-copy" aria-hidden="true">© 2026 Frank Amand</div>
 </div>
 <div class="splash" id="splash" role="dialog" aria-label="Tilescraper start screen">
   <div class="sp-inner">
-    <div class="sp-title"><h2 class="tlogo">TILESCRAPER</h2><p>Match-4 sliding puzzle</p></div>
+    <div class="sp-title"><h2 class="tlogo">TILESCRAPER</h2><p data-t>Match-4 sliding puzzle</p></div>
     <div class="sp-scene" id="spscene" aria-hidden="true"></div>
 
     <div class="sp-section">
       <div class="seg" role="group" aria-label="Game mode">
-        <button type="button" id="sp-free" aria-pressed="false">Free play</button>
-        <button type="button" id="sp-timed" aria-pressed="true">Timed</button>
-        <button type="button" id="sp-daily" aria-pressed="false">Daily</button>
+        <button type="button" id="sp-free" aria-pressed="false" data-t>Free play</button>
+        <button type="button" id="sp-timed" aria-pressed="true" data-t>Timed</button>
+        <button type="button" id="sp-daily" aria-pressed="false" data-t>Daily</button>
       </div>
       <p class="sp-note" id="sp-modenote">One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.</p>
       <div class="sp-actions">
-        <button type="button" id="sp-play" class="play">Play</button>
-        <button type="button" id="sp-resume" class="ghost" hidden>Resume</button>
+        <button type="button" id="sp-play" class="play" data-t>Play</button>
+        <button type="button" id="sp-resume" class="ghost" hidden data-t>Resume</button>
       </div>
     </div>
 
@@ -671,25 +676,30 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       <ol class="hs" id="hslist"></ol>
       <div class="daystats" id="daystats" hidden>
         <div class="dstats">
-          <div class="dstat" id="ds-longbox"><span class="k">Longest streak</span><span class="v" id="ds-long">0</span></div>
-          <div class="dstat" id="ds-curbox"><span class="k">Current streak</span><span class="v" id="ds-cur">0</span></div>
+          <div class="dstat" id="ds-longbox"><span class="k" data-t>Longest streak</span><span class="v" id="ds-long">0</span></div>
+          <div class="dstat" id="ds-curbox"><span class="k" data-t>Current streak</span><span class="v" id="ds-cur">0</span></div>
         </div>
         <p class="ds-day" id="ds-day"></p>
         <div class="druns" id="ds-runs"></div>
-        <button type="button" id="sp-dshare" class="cyan">Share</button>
+        <button type="button" id="sp-dshare" class="cyan" data-t>Share</button>
       </div>
       <p class="sp-note" id="hsnote"></p>
     </div>
 
+    <div class="sp-lang" role="group" aria-label="Language / Taal">
+      <button type="button" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" data-lang="nl" aria-pressed="false">Nederlands</button>
+    </div>
+
     <div class="sp-share">
-      <label for="sp-share"><input type="checkbox" id="sp-share"> Share my game stats with Frank</label>
-      <p class="sp-note">Helps tune the difficulty. For each game you finish (a timed game when the clock runs out, free play when you start a new game) it sends your score, moves, game length, colours reached, the lines you made and when, plus your initials and a random player code. Nothing else, and only while this box is ticked.</p>
+      <label for="sp-share"><input type="checkbox" id="sp-share"> <span data-t>Share my game stats with Frank</span></label>
+      <p class="sp-note" data-t>Helps tune the difficulty. For each game you finish (a timed game when the clock runs out, free play when you start a new game) it sends your score, moves, game length, colours reached, the lines you made and when, plus your initials and a random player code. Nothing else, and only while this box is ticked.</p>
       <p class="sp-note" id="sp-sharestate"></p>
     </div>
 
     <label class="sp-test" for="sp-testmode"><input type="checkbox" id="sp-testmode"> Test mode <span>colour count, sound and voice settings, stats</span></label>
     <button type="button" id="sp-resetdaily" class="ghost testonly">Reset today's daily</button>
-    <p class="sp-copy">© 2026 Frank Amand. All rights reserved.</p>
+    <p class="sp-copy" data-t>© 2026 Frank Amand. All rights reserved.</p>
   </div>
 </div>
 
@@ -704,15 +714,98 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     </div>
     <div class="sp-actions"><button type="button" id="sh-share" class="play">Share</button></div>
     <div class="sh-actions">
-      <button type="button" id="sh-watch" class="ghost">▶ Watch</button>
-      <button type="button" id="sh-back" class="ghost">Back</button>
+      <button type="button" id="sh-watch" class="ghost" data-t>▶ Watch</button>
+      <button type="button" id="sh-back" class="ghost" data-t>Back</button>
     </div>
   </div>
 </div>
 
 <script>
 (function () {
-  const APP_VERSION = 'v3.18';
+  // ---- Language: English (the source wording) and Flemish. Texts are looked up by their English wording,
+  // {name} placeholders are filled in, anything missing stays English. Test-mode controls stay English;
+  // the C64 voice keeps its English arcade calls. Pick: ?lang=nl / ?lang=en, then the saved choice, then the phone.
+  const NL = {
+    // Toolbar, HUD, time bar
+    'New game': 'Nieuw spel', 'Full screen': 'Vol scherm', 'Exit full': 'Klein scherm', 'Menu': 'Menu',
+    'Music & FX': 'Muziek & FX', 'FX only': 'Enkel FX', 'Mute': 'Stil', 'Sound: {s}. Tap to change': 'Geluid: {s}. Tik om te wisselen',
+    'Score': 'Score', 'Moves': 'Zetten', 'Time': 'Tijd', 'Cleared': 'Opgeruimd', 'High score': 'Record', 'Moves / 1000': 'Zetten / 1000',
+    'Free play': 'Vrij spel', 'Timed': 'Tegen de klok', 'Daily': 'Dagpuzzel', 'Daily #{n}': 'Dagpuzzel #{n}', 'Replay · ': 'Herhaling · ',
+    '{n} of 6 colours cleared': '{n} van 6 kleuren opgeruimd', 'No colours cleared yet': 'Nog geen kleuren opgeruimd',
+    'Starts on your first move': 'Start bij je eerste zet', '{s} s left': 'nog {s} s', 'Clock refilled': 'Klok bijgevuld',
+    'par {p} moves': 'par {p} zetten', 'clear all six colours': 'ruim alle zes kleuren op',
+    'Overtime · clock ×{x}': 'Verlenging · klok ×{x}', 'Top step': 'Hoogste trede', 'next: {x}': 'volgende: {x}', 'next:': 'volgende:',
+    'stones': 'stenen', '{a} → {b} colors': '{a} → {b} kleuren', ' +{n} stone': ' +{n} steen', ' +{n} stones': ' +{n} stenen',
+    '6×6 stones · ': '6×6 stenen · ', '7×7 stones · ': '7×7 stenen · ', '{n} colors': '{n} kleuren', '{n} by {n} sliding board': '{n} bij {n} schuifbord',
+    // Banners and end screens
+    'Overtime': 'Verlenging', 'Level 3 · Stones': 'Level 3 · Stenen', '3 color survive': 'Overleven met 3', 'Five streak ×{x}': 'Vijfreeks ×{x}',
+    '  ·  five streak ×{x}': '  ·  vijfreeks ×{x}', 'Replay #{n}': 'Herhaling #{n}',
+    'Game over': 'Game over', 'New high score!': 'Nieuw record!', 'Play again': 'Opnieuw spelen', "Play today's daily": 'Dagpuzzel spelen',
+    'Replay done': 'Herhaling klaar', 'All clear': 'Alles opgeruimd', '{m} moves': '{m} zetten',
+    'First run today': 'Je eerste spel vandaag', 'Your best today, on time and moves!': 'Je beste van vandaag, in tijd én zetten!',
+    'Fastest today! Fewest: {m} moves ({t})': 'Snelste van vandaag! Minste zetten: {m} ({t})',
+    'Fewest moves today! Fastest: {t} ({m} moves)': 'Minste zetten van vandaag! Snelste: {t} ({m} zetten)',
+    'Your best today: {t} · {m} moves': 'Je beste van vandaag: {t} · {m} zetten',
+    'Best today: ⏱ {ft} ({fm} moves) · fewest {wm} moves ({wt})': 'Beste van vandaag: ⏱ {ft} ({fm} zetten) · minste {wm} zetten ({wt})',
+    'Top five! Enter your initials': 'Top vijf! Geef je initialen in', 'OK': 'OK',
+    "Your stats couldn't be sent from here. Copy them and send them to Frank:": 'Je statistieken konden van hieruit niet verstuurd worden. Kopieer ze en stuur ze naar Frank:',
+    'Copy stats': 'Statistieken kopiëren', 'Copied': 'Gekopieerd', 'Copied!': 'Gekopieerd!', 'Copy failed': 'Kopiëren mislukt',
+    'Share': 'Delen', 'Replay': 'Herbekijken',
+    'Spoiler': 'Spoiler', 'Play first': 'Eerst zelf spelen', 'Watch anyway': 'Toch bekijken',
+    "This replay shows a way through today's Daily #{n}. Play it yourself first, or watch anyway?": 'Deze herhaling toont een weg door dagpuzzel #{n} van vandaag. Eerst zelf spelen, of toch bekijken?',
+    // Share screen and shared text
+    'This run · best': 'Dit spel · beste', 'This run · fastest': 'Dit spel · snelste', 'This run · fewest': 'Dit spel · minste zetten', 'This run': 'Dit spel',
+    'Best': 'Beste', 'Fastest': 'Snelste', 'Fewest': 'Minste zetten', 'Today': 'Vandaag', 'Yesterday': 'Gisteren',
+    'Shared with a link so friends can watch the run.': 'Gedeeld met een link, zodat vrienden je spel kunnen bekijken.',
+    'An older run, saved without its moves: shared as time and moves only.': 'Een ouder spel, bewaard zonder de zetten: enkel tijd en aantal zetten worden gedeeld.',
+    '▶ Watch': '▶ Bekijken', 'Back': 'Terug', 'Tilescraper Daily #{n}': 'Tilescraper Dagpuzzel #{n}', 'Watch my run: ': 'Bekijk mijn spel: ',
+    // Title and menu screen
+    'Match-4 sliding puzzle': 'Schuifpuzzel · vier op een rij', 'TAP TO START': 'TIK OM TE STARTEN', 'Tilescraper. Tap to start': 'Tilescraper. Tik om te starten',
+    'Play': 'Spelen', 'Resume': 'Verder spelen',
+    "Daily #{n}: today's board, the same for everyone. Six colours, four tiles each. Line up a colour's four and they go dark. Clear all six as fast as you can.":
+      'Dagpuzzel #{n}: het bord van vandaag, voor iedereen hetzelfde. Zes kleuren, vier tegels per kleur. Zet de vier tegels van een kleur op een rij en ze worden donker. Ruim alle zes zo snel mogelijk op.',
+    'One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.':
+      'Eén minuut op de klok. Vier op een rij geeft 8 seconden extra (minder naarmate je stijgt), vijf op een rij geeft er 15. Goed spel brengt de volgende kleur sneller; vijf keer na elkaar vijf bouwt een reeks op.',
+    'No clock. You start with {n} colours, and another joins every 15,000 points.': 'Geen klok. Je begint met {n} kleuren, en per 15.000 punten komt er een kleur bij.',
+    'Tap a tile next to the gap': 'Tik op een tegel naast het gat', 'It slides in': 'Ze schuift erin', 'Four in a row scores': 'Vier op een rij scoort',
+    'and the tiles get new colours': 'en de tegels krijgen nieuwe kleuren', 'Now line up five': 'Zet er nu vijf op een rij', 'Five scores triple': 'Vijf scoort driedubbel',
+    'and in timed mode wins 15 seconds': 'en tegen de klok wint dat 15 seconden', '+1,000': '+1.000', '+3,000 · +15 s': '+3.000 · +15 s',
+    'Your daily': 'Jouw dagpuzzel', 'Free play high scores': 'Records vrij spel', 'Timed high scores': 'Records tegen de klok',
+    'Longest streak': 'Langste reeks', 'Current streak': 'Huidige reeks', 'day': 'dag', 'days': 'dagen', ', not played yet': ', nog niet gespeeld',
+    'A streak counts the days in a row you finished the daily.': 'Een reeks telt de dagen na elkaar dat je de dagpuzzel uitspeelde.',
+    ' Streaks are saved to your Claude account; fastest and fewest are kept on this device.': ' Reeksen worden in je Claude-account bewaard; snelste en minste zetten op dit toestel.',
+    ' Saved on this device.': ' Bewaard op dit toestel.', 'Saved on this device.': 'Bewaard op dit toestel.',
+    'Saved to your Claude account, so they stay when the game updates.': 'Bewaard in je Claude-account, dus ze blijven bij een update van het spel.',
+    'No free play games yet. Your five best scores will show here.': 'Nog geen vrije spellen. Je vijf beste scores komen hier.',
+    'No timed games yet. Your five best scores will show here.': 'Nog geen spellen tegen de klok. Je vijf beste scores komen hier.',
+    'stones · ': 'stenen · ', '{n} colours': '{n} kleuren', 'old scoring': 'oude telling',
+    'Share my game stats with Frank': 'Deel mijn spelstatistieken met Frank',
+    'Helps tune the difficulty. For each game you finish (a timed game when the clock runs out, free play when you start a new game) it sends your score, moves, game length, colours reached, the lines you made and when, plus your initials and a random player code. Nothing else, and only while this box is ticked.':
+      'Helpt om de moeilijkheid af te stellen. Voor elk spel dat je afwerkt (tegen de klok als de tijd op is, vrij spel als je een nieuw spel start) stuurt het je score, zetten, speelduur, bereikte kleuren, je lijnen en wanneer je ze maakte, plus je initialen en een willekeurige spelerscode. Niets anders, en enkel zolang dit vakje aangevinkt is.',
+    'Thanks! Your finished timed games will be sent automatically. If sending ever fails, you get a Copy stats button instead.':
+      'Bedankt! Je afgewerkte spellen tegen de klok worden automatisch verstuurd. Lukt het versturen eens niet, dan krijg je een knop om ze te kopiëren.',
+    '© 2026 Frank Amand. All rights reserved.': '© 2026 Frank Amand. Alle rechten voorbehouden.'
+  };
+  let LANG = 'en';
+  try {
+    const q = new URLSearchParams(location.search).get('lang'), saved = localStorage.getItem('tilescraper-lang');
+    LANG = q === 'nl' || q === 'en' ? q : saved === 'nl' || saved === 'en' ? saved : /^nl\b/i.test(navigator.language || '') ? 'nl' : 'en';
+    if (q === 'nl' || q === 'en') localStorage.setItem('tilescraper-lang', q);
+  } catch (e) {}
+  const tr = (s, v) => {
+    let r = LANG === 'nl' && NL[s] !== undefined ? NL[s] : s;
+    if (v) r = r.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
+    return r;
+  };
+  const LOCALE = () => LANG === 'nl' ? 'nl-BE' : 'en-US';
+  // Fixed texts in the page carry data-t (text) or data-ta (aria-label); their English stays in data-en.
+  function applyStaticText() {
+    document.documentElement.lang = LANG === 'nl' ? 'nl-BE' : 'en';
+    document.querySelectorAll('[data-t]').forEach(el => { if (el.dataset.en === undefined) el.dataset.en = el.textContent; el.textContent = tr(el.dataset.en); });
+    document.querySelectorAll('[data-ta]').forEach(el => { if (el.dataset.enA === undefined) el.dataset.enA = el.getAttribute('aria-label'); el.setAttribute('aria-label', tr(el.dataset.enA)); });
+  }
+  applyStaticText();
+  const APP_VERSION = 'v3.19';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1336,8 +1429,8 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   const soundState = () => !soundBox.checked ? 'silent' : musicBox.checked ? 'all' : 'sound';
   function renderSoundBtn() {
     const st = soundState();
-    soundBtn.dataset.state = st; soundLabel.textContent = SOUND_LABEL[st];
-    soundBtn.setAttribute('aria-label', 'Sound: ' + SOUND_LABEL[st] + '. Tap to change');
+    soundBtn.dataset.state = st; soundLabel.textContent = tr(SOUND_LABEL[st]);
+    soundBtn.setAttribute('aria-label', tr('Sound: {s}. Tap to change', { s: tr(SOUND_LABEL[st]) }));
   }
   function setSoundState(st) {
     const snd = st !== 'silent', mus = st === 'all';
@@ -1429,7 +1522,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   const bannerEl = document.getElementById('banner');
   const overEl = document.getElementById('over');
   const overText = document.getElementById('overtext');
-  const fmt = p => Math.round(p * 1000).toLocaleString('en-US');
+  const fmt = p => Math.round(p * 1000).toLocaleString(LOCALE());
 
   // Timed mode
   const T_MAX = 60, LEVEL_EVERY = 120, BESTKEY = 'slide4-best-timed';
@@ -1451,7 +1544,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       else fsEl.requestFullscreen({ navigationUI: 'hide' }).catch(() => { fsBtn.hidden = true; });
     });
     document.addEventListener('fullscreenchange', () => {
-      fsBtn.querySelector('span').textContent = document.fullscreenElement ? 'Exit full' : 'Full screen';
+      fsBtn.querySelector('span').textContent = tr(document.fullscreenElement ? 'Exit full' : 'Full screen');
       document.body.classList.toggle('fs', !!document.fullscreenElement);
     });
   }
@@ -1537,12 +1630,12 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show');
   }
   function bonus(sec) {
-    tbBonus.textContent = sec >= 60 ? 'Clock refilled' : '+' + sec + ' s';
+    tbBonus.textContent = sec >= 60 ? tr('Clock refilled') : '+' + sec + ' s';
     tbBonus.classList.remove('pop'); void tbBonus.offsetWidth; tbBonus.classList.add('pop');
   }
   function renderTime() {
     tbFill.style.width = Math.max(0, timeLeft / T_MAX * 100) + '%';
-    tbSec.textContent = clockOn || elapsed > 0 ? Math.ceil(Math.max(0, timeLeft)) + ' s left' : 'Starts on your first move';
+    tbSec.textContent = clockOn || elapsed > 0 ? tr('{s} s left', { s: Math.ceil(Math.max(0, timeLeft)) }) : tr('Starts on your first move');
     timebar.classList.toggle('low', clockOn && timeLeft <= 10);
     renderStep();
   }
@@ -1554,20 +1647,20 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     return Math.max(0, Math.min(1, (climbPts - prevAt) / (freeNextAt - prevAt)));
   }
   function nextLabel() {
-    if (rung >= LADDER.length - 1) return mode === 'timed' ? (otStart ? 'Overtime · clock ×' + (1 + 0.1 * (elapsed - otStart) / 60).toFixed(1) : 'Top step') : 'Top step';
+    if (rung >= LADDER.length - 1) return mode === 'timed' && otStart ? tr('Overtime · clock ×{x}', { x: (1 + 0.1 * (elapsed - otStart) / 60).toFixed(1) }) : tr('Top step');
     const [lv, n, st] = LADDER[rung + 1], cur = LADDER[Math.max(0, rung)];
-    if (lv !== level) return 'next: ' + (lv === 2 ? '6×6' : lv === 3 ? 'stones' : '7×7');
+    if (lv !== level) return tr('next: {x}', { x: lv === 2 ? '6×6' : lv === 3 ? tr('stones') : '7×7' });
     const more = (st || 0) - (cur[2] || 0);
-    return (n !== nColors ? nColors + ' → ' + n + ' colors' : 'next:') + (more > 0 ? ' +' + more + (more > 1 ? ' stones' : ' stone') : '');
+    return (n !== nColors ? tr('{a} → {b} colors', { a: nColors, b: n }) : tr('next:')) + (more > 0 ? tr(more > 1 ? ' +{n} stones' : ' +{n} stone', { n: more }) : '');
   }
-  const stageLabel = () => (level === 2 ? '6×6 · ' : level === 3 ? '6×6 stones · ' : level === 4 ? '7×7 stones · ' : '') + nColors + ' colors';
+  const stageLabel = () => (level === 2 ? '6×6 · ' : level === 3 ? tr('6×6 stones · ') : level === 4 ? tr('7×7 stones · ') : '') + tr('{n} colors', { n: nColors });
   const fmtClock = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   function renderStep() {
     if (mode === 'daily') {
       timebar.classList.remove('soon');
       tbSec.textContent = fmtClock(elapsed);
       elScore.textContent = fmtClock(elapsed);
-      tbColors.textContent = DAILY_PAR[dailyNo()] ? 'par ' + DAILY_PAR[dailyNo()] + ' moves' : 'clear all six colours';
+      tbColors.textContent = DAILY_PAR[dailyNo()] ? tr('par {p} moves', { p: DAILY_PAR[dailyNo()] }) : tr('clear all six colours');
       return;
     }
     const f = stepFrac();
@@ -1591,7 +1684,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     // Overtime: after the top of the ladder the clock runs 10% faster for every minute spent there.
     if (!otStart && rung === LADDER.length - 1 && elapsed > 0) {
       otStart = elapsed;
-      setTimeout(() => { banner('Overtime'); say('overtime'); }, 900);
+      setTimeout(() => { banner(tr('Overtime')); say('overtime'); }, 900);
     }
     const rate = otStart ? 1 + 0.1 * (elapsed - otStart) / 60 : 1;
     if (otStart) { try { music.setRate(Math.min(1.2, 1 + (rate - 1) * 0.3)); } catch (e) {} }
@@ -1749,7 +1842,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   let statsDb = null, statsCanWrite = null, viewerIsOwner = false;
   function renderShareState() {
     if (!shareBox.checked) { shareState.textContent = ''; return; }
-    shareState.textContent = 'Thanks! Your finished timed games will be sent automatically. If sending ever fails, you get a Copy stats button instead.';
+    shareState.textContent = tr('Thanks! Your finished timed games will be sent automatically. If sending ever fails, you get a Copy stats button instead.');
   }
   shareBox.addEventListener('change', () => {
     try { localStorage.setItem('slide4-share', shareBox.checked ? '1' : '0'); } catch (e) {}
@@ -1790,7 +1883,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   }
   document.getElementById('statcopybtn').addEventListener('click', () => {
     const txt = statCopyText.value, btn = document.getElementById('statcopybtn');
-    const done = () => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy stats'; }, 1500); };
+    const done = () => { btn.textContent = tr('Copied'); setTimeout(() => { btn.textContent = tr('Copy stats'); }, 1500); };
     try {
       navigator.clipboard.writeText(txt).then(done, () => { statCopyText.focus(); statCopyText.select(); });
     } catch (e) { statCopyText.focus(); statCopyText.select(); }
@@ -1839,9 +1932,9 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     const newBest = score > bestAtStart && score > 0;
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
     const placed = mode === 'timed' ? addTimedScore(score, nColors, level) : { rank: -1 };
-    overEl.querySelector('h2').textContent = 'Game over';
+    overEl.querySelector('h2').textContent = tr('Game over');
     dTower.hidden = true; dShare.hidden = true; dExact.hidden = true; dReplay.hidden = true; overEl.classList.remove('daily');
-    overText.innerHTML = 'Score <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? 'New high score!' : 'High score ' + fmt(best));
+    overText.innerHTML = tr('Score') + ' <strong>' + fmt(score) + '</strong><br>' + (mode !== 'timed' ? '' : newBest ? tr('New high score!') : tr('High score') + ' ' + fmt(best));
     iniEl.hidden = true; overBtns.hidden = false;
     statCopy.hidden = true;
     if (placed.rank >= 0 && placed.rank < 5) askInitials(placed); else sendStats();
@@ -1854,7 +1947,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     if (score > best) { best = score; try { localStorage.setItem(BESTKEY, String(best)); } catch (e) {} }
     if (!bestCalled && bestAtStart > 0 && score > bestAtStart) {
       bestCalled = true;
-      setTimeout(() => { banner('High score'); say('high score'); }, 450);
+      setTimeout(() => { banner(tr('High score')); say('high score'); }, 450);
     }
   }
   const logBody = document.getElementById('logbody');
@@ -1897,7 +1990,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     board.querySelectorAll('.slot').forEach(e => e.remove());
     board.style.setProperty('--n', N);
     document.body.classList.toggle('n7', N >= 7);   // slimmer margins so 7x7 tiles stay big enough
-    board.setAttribute('aria-label', N + ' by ' + N + ' sliding board');
+    board.setAttribute('aria-label', tr('{n} by {n} sliding board', { n: N }));
     for (let i = 0; i < N * N; i++) {
       const s = document.createElement('div');
       s.className = 'slot';
@@ -1987,7 +2080,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     }
     rung = target; nColors = n; sel.value = String(n); renderStats();   // new stones grow out of the following lines
     if (mode === 'timed') renderTime();
-    setTimeout(() => { banner(n + ' colors'); say((NUMWORD[n] || String(n)) + ' colors'); }, 500);
+    setTimeout(() => { banner(tr('{n} colors', { n })); say((NUMWORD[n] || String(n)) + ' colors'); }, 500);
   }
   // Turn random tiles into stones until the board holds `target` of them.
   function addStones(target, prefer) {
@@ -2010,7 +2103,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     fresh.forEach(i => { const t = grid[i]; t.color = cols[i]; paint(t); t.el.classList.remove('grow'); void t.el.offsetWidth; t.el.classList.add('grow'); });
     if (mode === 'timed') { timeLeft = T_MAX; bonus(60); renderTime(); }
     renderStats();
-    banner('Level 3 · Stones'); say('level three');
+    banner(tr('Level 3 · Stones')); say('level three');
     setTimeout(() => addStones(k, lastLine), 600);
     setTimeout(() => {
       grid.forEach(t => t && t.el.classList.remove('grow'));
@@ -2082,15 +2175,15 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     return floors.reverse().join('\n');
   }
   function dailyShareText() {
-    return 'Tilescraper Daily #' + dailyNo() + '\n⏱ ' + fmtClock(elapsed) + ' · ' + moves + ' moves' + parText(dailyDay) + '\n\n' + dailyTower()
-      + '\n\nWatch my run: ' + replayLink(dailyDay, dailyMoves);
+    return tr('Tilescraper Daily #{n}', { n: dailyNo() }) + '\n⏱ ' + fmtClock(elapsed) + ' · ' + tr('{m} moves', { m: moves }) + parText(dailyDay) + '\n\n' + dailyTower()
+      + '\n\n' + tr('Watch my run: ') + replayLink(dailyDay, dailyMoves);
   }
   // A stored run ({t, m, moves}) shared like a fresh one. The tower is rebuilt by playing its taps on the day's board;
   // old bests saved without taps share time and moves only.
   function runShareText(day, run) {
-    const head = 'Tilescraper Daily #' + dailyNo(day) + '\n⏱ ' + fmtClock(run.t) + ' · ' + run.m + ' moves' + parText(day);
+    const head = tr('Tilescraper Daily #{n}', { n: dailyNo(day) }) + '\n⏱ ' + fmtClock(run.t) + ' · ' + tr('{m} moves', { m: run.m }) + parText(day);
     if (!run.moves || !run.moves.length) return head + '\n\n' + GAME_URL;
-    return head + '\n\n' + dailyTower(runLog(day, run.moves)) + '\n\nWatch my run: ' + replayLink(day, run.moves);
+    return head + '\n\n' + dailyTower(runLog(day, run.moves)) + '\n\n' + tr('Watch my run: ') + replayLink(day, run.moves);
   }
   // Plays taps on the day's board without animation and returns the clear log: [colour, moves when cleared] per line.
   function runLog(day, taps) {
@@ -2143,10 +2236,10 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     try {
       if (navigator.share) { pinInsets(); try { await navigator.share({ text }); } finally { unpinInsets(); } return; }
     } catch (e) { if (e && e.name === 'AbortError') return; }
-    try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied!'; }
+    try { await navigator.clipboard.writeText(text); btn.textContent = tr('Copied!'); }
     catch (e) {
-      try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); btn.textContent = 'Copied!'; }
-      catch (e2) { btn.textContent = 'Copy failed'; }
+      try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); btn.textContent = tr('Copied!'); }
+      catch (e2) { btn.textContent = tr('Copy failed'); }
     }
     setTimeout(() => { btn.textContent = label; }, 1800);
   }
@@ -2263,7 +2356,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     timebar.hidden = false; timebar.classList.remove('free'); timebar.classList.add('daily');
     dailyNew(run.day); over = false;
     replaying = true;
-    banner('Replay #' + dailyNo(run.day));
+    banner(tr('Replay #{n}', { n: dailyNo(run.day) }));
     await new Promise(r => setTimeout(r, 900));
     for (const idx of run.moves) {
       if (!replaying || mode !== 'daily') return;
@@ -2280,7 +2373,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     let played = false;
     try { played = !!localStorage.getItem('tilescraper-daily-' + run.day); } catch (e) {}
     if (!today || played) { dailyReplay(run); return; }
-    document.getElementById('spoiltext').textContent = 'This replay shows a way through today\'s Daily #' + dailyNo(run.day) + '. Play it yourself first, or watch anyway?';
+    document.getElementById('spoiltext').textContent = tr("This replay shows a way through today's Daily #{n}. Play it yourself first, or watch anyway?", { n: dailyNo(run.day) });
     modeSel.value = 'daily'; newGame();   // behind the question: today's daily, ready to play
     spoilEl.hidden = false;
     document.getElementById('spoilplay').onclick = () => { spoilEl.hidden = true; };
@@ -2305,16 +2398,16 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   let shDay = '', shRuns = [], shIdx = 0;
   const dayLabel = day => {
     const today = dailyKey(), yest = new Date(Date.parse(today + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10);
-    if (day === today) return 'Today';
-    if (day === yest) return 'Yesterday';
-    try { return new Date(day + 'T12:00:00Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return day; }
+    if (day === today) return tr('Today');
+    if (day === yest) return tr('Yesterday');
+    try { return new Date(day + 'T12:00:00Z').toLocaleDateString(LOCALE(), { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return day; }
   };
   function openShare(day, cur) {
     const b = dailyBests(day), runs = [];
     const same = b.fast && b.few && sameRun(b.fast, b.few);
-    if (cur) runs.push({ label: sameRun(cur, b.fast) && sameRun(cur, b.few) ? 'This run · best' : sameRun(cur, b.fast) ? 'This run · fastest' : sameRun(cur, b.few) ? 'This run · fewest' : 'This run', run: cur });
-    if (b.fast && !sameRun(b.fast, cur)) runs.push({ label: same ? 'Best' : 'Fastest', run: b.fast });
-    if (b.few && !same && !sameRun(b.few, cur)) runs.push({ label: 'Fewest', run: b.few });
+    if (cur) runs.push({ label: tr(sameRun(cur, b.fast) && sameRun(cur, b.few) ? 'This run · best' : sameRun(cur, b.fast) ? 'This run · fastest' : sameRun(cur, b.few) ? 'This run · fewest' : 'This run'), run: cur });
+    if (b.fast && !sameRun(b.fast, cur)) runs.push({ label: tr(same ? 'Best' : 'Fastest'), run: b.fast });
+    if (b.few && !same && !sameRun(b.few, cur)) runs.push({ label: tr('Fewest'), run: b.few });
     if (!runs.length) return;
     shDay = day; shRuns = runs; shIdx = 0;
     shPick.innerHTML = '';
@@ -2324,7 +2417,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       shPick.appendChild(btn);
     });
     shPick.hidden = runs.length < 2;
-    document.getElementById('sh-title').textContent = 'Daily #' + dailyNo(day);
+    document.getElementById('sh-title').textContent = tr('Daily #{n}', { n: dailyNo(day) });
     document.getElementById('sh-date').textContent = dayLabel(day);
     renderShare();
     shEl.hidden = false; shEl.scrollTop = 0;
@@ -2332,15 +2425,15 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   function renderShare() {
     const run = shRuns[shIdx].run;
     [...shPick.children].forEach((btn, i) => btn.setAttribute('aria-pressed', String(i === shIdx)));
-    document.getElementById('sh-line').innerHTML = '<strong>⏱ ' + fmtClock(run.t) + '</strong> · ' + run.m + ' moves' + parText(shDay);
+    document.getElementById('sh-line').innerHTML = '<strong>⏱ ' + fmtClock(run.t) + '</strong> · ' + tr('{m} moves', { m: run.m }) + parText(shDay);
     const hasTaps = run.moves && run.moves.length;
     const tw = document.getElementById('sh-tower');
     tw.textContent = hasTaps ? dailyTower(runLog(shDay, run.moves)) : ''; tw.hidden = !hasTaps;
-    document.getElementById('sh-note').textContent = hasTaps ? 'Shared with a link so friends can watch the run.' : 'An older run, saved without its moves: shared as time and moves only.';
+    document.getElementById('sh-note').textContent = tr(hasTaps ? 'Shared with a link so friends can watch the run.' : 'An older run, saved without its moves: shared as time and moves only.');
     shWatch.hidden = !hasTaps;
-    shShare.textContent = 'Share';
+    shShare.textContent = tr('Share');
   }
-  shShare.addEventListener('click', () => shareOut(runShareText(shDay, shRuns[shIdx].run), shShare, 'Share'));
+  shShare.addEventListener('click', () => shareOut(runShareText(shDay, shRuns[shIdx].run), shShare, tr('Share')));
   shWatch.addEventListener('click', () => {
     const run = shRuns[shIdx].run;
     if (!run.moves || !run.moves.length) return;
@@ -2353,9 +2446,9 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     over = true; clockOn = false;
     if (replaying) {
       replaying = false;
-      overEl.querySelector('h2').textContent = 'Replay done';
-      overText.innerHTML = 'Daily #' + dailyNo() + '<br>' + moves + ' moves' + parText(dailyDay);
-      document.getElementById('again').textContent = 'Play today\'s daily';
+      overEl.querySelector('h2').textContent = tr('Replay done');
+      overText.innerHTML = tr('Daily #{n}', { n: dailyNo() }) + '<br>' + tr('{m} moves', { m: moves }) + parText(dailyDay);
+      document.getElementById('again').textContent = tr("Play today's daily");
       doneRun = null;
       dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = !dailyBests(dailyDay).fast; dReplay.hidden = false; overEl.classList.add('daily');
       dExact.hidden = true;
@@ -2376,19 +2469,19 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     try { localStorage.setItem(key, JSON.stringify(b)); } catch (e) {}
     markDayPlayed(dailyDay);
     doneRun = run;
-    const bestLine = first ? 'First run today'
-      : newFast && newFew ? 'Your best today, on time and moves!'
-      : newFast ? 'Fastest today! Fewest: ' + b.few.m + ' moves (' + fmtClock(b.few.t) + ')'
-      : newFew ? 'Fewest moves today! Fastest: ' + fmtClock(b.fast.t) + ' (' + b.fast.m + ' moves)'
-      : sameRun(b.fast, b.few) ? 'Your best today: ' + fmtClock(b.fast.t) + ' · ' + b.fast.m + ' moves'
-      : 'Best today: ⏱ ' + fmtClock(b.fast.t) + ' (' + b.fast.m + ' moves) · fewest ' + b.few.m + ' moves (' + fmtClock(b.few.t) + ')';
-    overEl.querySelector('h2').textContent = 'All clear';
+    const bestLine = first ? tr('First run today')
+      : newFast && newFew ? tr('Your best today, on time and moves!')
+      : newFast ? tr('Fastest today! Fewest: {m} moves ({t})', { m: b.few.m, t: fmtClock(b.few.t) })
+      : newFew ? tr('Fewest moves today! Fastest: {t} ({m} moves)', { t: fmtClock(b.fast.t), m: b.fast.m })
+      : sameRun(b.fast, b.few) ? tr('Your best today: {t} · {m} moves', { t: fmtClock(b.fast.t), m: b.fast.m })
+      : tr('Best today: ⏱ {ft} ({fm} moves) · fewest {wm} moves ({wt})', { ft: fmtClock(b.fast.t), fm: b.fast.m, wm: b.few.m, wt: fmtClock(b.few.t) });
+    overEl.querySelector('h2').textContent = tr('All clear');
     dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = false; overEl.classList.add('daily');
     // test mode: the exact moves per colour behind the tower, in clearing order
     let prevM = 0;
     dExact.textContent = dailyLog.map(([c, m]) => { const n = m - prevM; prevM = m; return SQUARES[c] + ' ' + n; }).join(' · ');
     dExact.hidden = false;
-    overText.innerHTML = 'Daily #' + dailyNo() + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + moves + ' moves' + parText(dailyDay) + '<br>' + bestLine;
+    overText.innerHTML = tr('Daily #{n}', { n: dailyNo() }) + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + tr('{m} moves', { m: moves }) + parText(dailyDay) + '<br>' + bestLine;
     iniEl.hidden = true; overBtns.hidden = false; statCopy.hidden = true;
     sendStats('done');
     overEl.hidden = false;
@@ -2398,7 +2491,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 
   function newGame() {
     replaying = false;
-    document.getElementById('again').textContent = 'Play again';
+    document.getElementById('again').textContent = tr('Play again');
     if (mode === 'free' && !over) { recordFree(); sendStats('new'); }   // free play ends when a new game starts
     mode = modeSel.value;
     freeT = mode === 'free' ? Date.now() : 0;
@@ -2449,7 +2542,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     survive = now;
     trayEl.classList.toggle('survive', now);
     if (now && !quiet && gs) gs.surv++;
-    if (now && !quiet) { banner('3 color survive'); say('three color survive', false, SURVIVE_PHON); }
+    if (now && !quiet) { banner(tr('3 color survive')); say('three color survive', false, SURVIVE_PHON); }
   }
 
   function adjacent(a, b) {
@@ -2546,7 +2639,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       timeLeft = Math.min(T_MAX, timeLeft + add);
       bonus(add);
       if (lines.some(l => l.length >= 5)) {
-        if (streak >= 3) setTimeout(() => banner('Five streak ×' + (1 + 0.5 * (streak - 1))), 300);
+        if (streak >= 3) setTimeout(() => banner(tr('Five streak ×{x}', { x: 1 + 0.5 * (streak - 1) })), 300);
         const tp = document.getElementById('timepop');
         tp.innerHTML = '<span></span>'; tp.firstChild.textContent = '+' + add + ' s';
         tp.classList.remove('pop'); void tp.offsetWidth; tp.classList.add('pop');
@@ -2596,7 +2689,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
 
   function showPts(p, sm) {
     const el = document.getElementById('ptspop');
-    el.innerHTML = '<span></span>'; el.firstChild.textContent = '+' + fmt(p) + (sm > 1 ? '  ·  five streak ×' + sm : '');
+    el.innerHTML = '<span></span>'; el.firstChild.textContent = '+' + fmt(p) + (sm > 1 ? tr('  ·  five streak ×{x}', { x: sm }) : '');
     el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   }
   // Daily: one outline per colour, filled when that colour is cleared (a little pop for the new one).
@@ -2610,31 +2703,31 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       d.classList.toggle('done', done.has(c));
       if (bump && !was && done.has(c)) { d.classList.remove('pop'); void d.offsetWidth; d.classList.add('pop'); }
     });
-    cDots.setAttribute('aria-label', done.size ? done.size + ' of 6 colours cleared' : 'No colours cleared yet');
+    cDots.setAttribute('aria-label', done.size ? tr('{n} of 6 colours cleared', { n: done.size }) : tr('No colours cleared yet'));
   }
   function renderStats(bumpScore) {
     const mEl = document.getElementById('mult'), daily = mode === 'daily';
     if (mEl) mEl.textContent = mult(nColors) > 1 ? '×' + mult(nColors) : '';
     elScore.textContent = fmt(score);
     elMoves.textContent = moves;
-    document.getElementById('scorek').textContent = daily ? 'Time' : 'Score';
+    document.getElementById('scorek').textContent = tr(daily ? 'Time' : 'Score');
     document.getElementById('hud').classList.toggle('daily', daily);
     elRatio.hidden = daily; cDots.hidden = !daily;
     const n = daily ? dailyNo() : 0;
-    document.getElementById('modeline').textContent = daily ? (replaying ? 'Replay · ' : '') + 'Daily #' + n + (DAILY_PAR[n] ? ' · par ' + DAILY_PAR[n] : '')
-      : mode === 'timed' ? 'Timed' : 'Free play';
+    document.getElementById('modeline').textContent = daily ? (replaying ? tr('Replay · ') : '') + tr('Daily #{n}', { n }) + (DAILY_PAR[n] ? ' · par ' + DAILY_PAR[n] : '')
+      : tr(mode === 'timed' ? 'Timed' : 'Free play');
     try { renderStep(); } catch (e) {}
     if (daily) {
       if (mEl) mEl.textContent = '';
       elScore.textContent = fmtClock(elapsed);
-      elRatioK.textContent = 'Cleared';
+      elRatioK.textContent = tr('Cleared');
       renderDots(bumpScore);
       return;
     } else if (mode === 'timed') {
-      elRatioK.textContent = 'High score';
+      elRatioK.textContent = tr('High score');
       elRatio.textContent = fmt(Math.max(best, score));
     } else {
-      elRatioK.textContent = 'Moves / 1000';
+      elRatioK.textContent = tr('Moves / 1000');
       elRatio.textContent = score ? (moves / score).toFixed(1) : '–';
     }
     if (bumpScore) { elScore.classList.remove('bump'); void elScore.offsetWidth; elScore.classList.add('bump'); }
@@ -2737,11 +2830,28 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     spDaily.setAttribute('aria-pressed', String(m === 'daily'));
     renderScores();
     spNote.textContent = m === 'daily'
-      ? 'Daily #' + dailyNo() + ': today\'s board, the same for everyone. Six colours, four tiles each. Line up a colour\'s four and they go dark. Clear all six as fast as you can.'
+      ? tr("Daily #{n}: today's board, the same for everyone. Six colours, four tiles each. Line up a colour's four and they go dark. Clear all six as fast as you can.", { n: dailyNo() })
       : m === 'timed'
-      ? 'One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.'
-      : 'No clock. You start with ' + (testBox.checked ? sel.value : 6) + ' colours, and another joins every 15,000 points.';
+      ? tr('One minute on the clock. Fours add 8 seconds (fewer as you climb), fives add 15. Good play brings the next colour sooner; fives in a row build a streak.')
+      : tr('No clock. You start with {n} colours, and another joins every 15,000 points.', { n: testBox.checked ? sel.value : 6 });
   }
+  // Language switch (menu screen): redraw every text that is on screen now.
+  const langBtns = [...document.querySelectorAll('.sp-lang button')];
+  function markLang() { langBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG))); }
+  function setLang(l) {
+    LANG = l === 'nl' ? 'nl' : 'en';
+    try { localStorage.setItem('tilescraper-lang', LANG); } catch (e) {}
+    applyStaticText(); markLang();
+    try { renderSoundBtn(); } catch (e) {}
+    try { fsBtn.querySelector('span').textContent = tr(document.fullscreenElement ? 'Exit full' : 'Full screen'); } catch (e) {}
+    try { board.setAttribute('aria-label', tr('{n} by {n} sliding board', { n: N })); } catch (e) {}
+    if (!over) document.getElementById('again').textContent = tr('Play again');
+    renderStats(); setSpMode(spMode);
+    if (mode === 'timed') renderTime();
+    renderShareState();
+  }
+  langBtns.forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  markLang();
   spFree.addEventListener('click', () => setSpMode('free'));
   spTimed.addEventListener('click', () => setSpMode('timed'));
   spDaily.addEventListener('click', () => setSpMode('daily'));
@@ -2765,7 +2875,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     try { localStorage.setItem('slide4-dev', dev ? '1' : '0'); } catch (e) {}
     applyDev();
   });
-  const fmtDate = t => { try { return t ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; } catch (e) { return ''; } };
+  const fmtDate = t => { try { return t ? new Date(t).toLocaleDateString(LOCALE(), { day: 'numeric', month: 'short', year: 'numeric' }) : ''; } catch (e) { return ''; } };
   // Days with a finished daily: the account's list plus this device's stored bests.
   function playedDays() {
     const set = new Set(scores.days);
@@ -2782,7 +2892,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     while (set.has(new Date(t).toISOString().slice(0, 10))) { cur++; t -= DAY; }
     return { longest, cur, today, yesterday: new Date(Date.parse(today + 'T00:00:00Z') - DAY).toISOString().slice(0, 10), set };
   }
-  const daysText = n => n + '<small> ' + (n === 1 ? 'day' : 'days') + '</small>';
+  const daysText = n => n + '<small> ' + tr(n === 1 ? 'day' : 'days') + '</small>';
   let homeDay = '';
   function renderDaily() {
     const st = streaks();
@@ -2793,12 +2903,12 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     const b = dailyBests(homeDay), runsEl = document.getElementById('ds-runs'), dayEl = document.getElementById('ds-day');
     runsEl.innerHTML = '';
     const has = !!(b.fast || b.few);
-    dayEl.innerHTML = (homeDay === st.today ? 'Today' : 'Yesterday') + ' <span>· Daily #' + dailyNo(homeDay) + '</span>';
-    if (!has) { homeDay = st.today; dayEl.innerHTML = 'Today <span>· Daily #' + dailyNo(st.today) + ', not played yet</span>'; }
+    dayEl.innerHTML = tr(homeDay === st.today ? 'Today' : 'Yesterday') + ' <span>· ' + tr('Daily #{n}', { n: dailyNo(homeDay) }) + '</span>';
+    if (!has) { homeDay = st.today; dayEl.innerHTML = tr('Today') + ' <span>· ' + tr('Daily #{n}', { n: dailyNo(st.today) }) + tr(', not played yet') + '</span>'; }
     const row = (k, v, x) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="k"></span><span class="v"></span><span class="x"></span>'; r.children[0].textContent = k; r.children[1].textContent = v; r.children[2].textContent = x; runsEl.appendChild(r); };
     if (has) {
-      if (sameRun(b.fast, b.few)) row('Best', fmtClock(b.fast.t), b.fast.m + ' moves');
-      else { if (b.fast) row('Fastest', fmtClock(b.fast.t), b.fast.m + ' moves'); if (b.few) row('Fewest', b.few.m + ' moves', fmtClock(b.few.t)); }
+      if (sameRun(b.fast, b.few)) row(tr('Best'), fmtClock(b.fast.t), tr('{m} moves', { m: b.fast.m }));
+      else { if (b.fast) row(tr('Fastest'), fmtClock(b.fast.t), tr('{m} moves', { m: b.fast.m })); if (b.few) row(tr('Fewest'), tr('{m} moves', { m: b.few.m }), fmtClock(b.few.t)); }
     }
     runsEl.hidden = !has;
     document.getElementById('sp-dshare').hidden = !has;
@@ -2806,19 +2916,19 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   document.getElementById('sp-dshare').addEventListener('click', () => openShare(homeDay));
   function renderScores() {
     const daily = spMode === 'daily', free = spMode === 'free';
-    document.getElementById('hshead').textContent = daily ? 'Your daily' : free ? 'Free play high scores' : 'Timed high scores';
+    document.getElementById('hshead').textContent = tr(daily ? 'Your daily' : free ? 'Free play high scores' : 'Timed high scores');
     document.getElementById('daystats').hidden = !daily;
     hsList.hidden = daily;
     hsList.innerHTML = '';
     if (daily) {
       renderDaily();
-      hsNote.textContent = 'A streak counts the days in a row you finished the daily.' + (scoreStore === 'account' ? ' Streaks are saved to your Claude account; fastest and fewest are kept on this device.' : ' Saved on this device.');
+      hsNote.textContent = tr('A streak counts the days in a row you finished the daily.') + tr(scoreStore === 'account' ? ' Streaks are saved to your Claude account; fastest and fewest are kept on this device.' : ' Saved on this device.');
       return;
     }
     const top = (free ? scores.free : scores.timed).slice(0, 5);
     if (!top.length) {
       const li = document.createElement('li'); li.className = 'empty';
-      li.textContent = free ? 'No free play games yet. Your five best scores will show here.' : 'No timed games yet. Your five best scores will show here.';
+      li.textContent = tr(free ? 'No free play games yet. Your five best scores will show here.' : 'No timed games yet. Your five best scores will show here.');
       hsList.appendChild(li);
     }
     top.forEach((e, i) => {
@@ -2827,11 +2937,11 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       li.children[0].textContent = (i + 1) + '.';
       li.children[1].textContent = e.n || '···';
       li.children[2].textContent = fmt(e.s);
-      li.children[3].textContent = e.r === 2 ? ((e.l === 2 ? '6×6 · ' : e.l === 3 ? 'stones · ' : e.l === 4 ? '7×7 · ' : '') + (e.c ? e.c + ' colours' : '')) : 'old scoring';
+      li.children[3].textContent = e.r === 2 ? ((e.l === 2 ? '6×6 · ' : e.l === 3 ? tr('stones · ') : e.l === 4 ? '7×7 · ' : '') + (e.c ? tr('{n} colours', { n: e.c }) : '')) : tr('old scoring');
       li.children[4].textContent = fmtDate(e.t);
       hsList.appendChild(li);
     });
-    hsNote.textContent = scoreStore === 'account' ? 'Saved to your Claude account, so they stay when the game updates.' : 'Saved on this device.';
+    hsNote.textContent = tr(scoreStore === 'account' ? 'Saved to your Claude account, so they stay when the game updates.' : 'Saved on this device.');
   }
   function showSplash() {
     if (clockOn) { clockOn = false; } // pause the timed clock while the menu is open
@@ -2895,20 +3005,20 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   function demoRun() {
     const sc = SCENES[scene]; scene = (scene + 1) % SCENES.length;
     demoBuild(sc);
-    demoCap.textContent = sc.caps[0];
+    demoCap.textContent = tr(sc.caps[0]);
     const mover = demoTiles.find(t => t.home === sc.from);
     const row = sc.line.map(h => demoTiles.find(t => t.home === h)).concat([mover]);
     later(900, () => { tapEl.classList.remove('show'); void tapEl.offsetWidth; tapEl.classList.add('show'); });
-    later(1250, () => { mover.el.style.transform = pos(sc.to, 5); demoCap.textContent = sc.caps[1]; });
+    later(1250, () => { mover.el.style.transform = pos(sc.to, 5); demoCap.textContent = tr(sc.caps[1]); });
     later(1750, () => {
-      demoCap.textContent = sc.caps[2];
+      demoCap.textContent = tr(sc.caps[2]);
       row.forEach(t => t.el.classList.add('match'));
-      plusEl.firstChild.textContent = sc.plus;
+      plusEl.firstChild.textContent = tr(sc.plus);
       plusEl.classList.remove('show'); void plusEl.offsetWidth; plusEl.classList.add('show');
     });
     later(2100, () => {
       row.forEach((t, k) => { demoPaint(t, sc.fresh[k]); t.el.classList.remove('match'); void t.el.offsetWidth; t.el.classList.add('grow'); });
-      demoCap.textContent = sc.caps[3];
+      demoCap.textContent = tr(sc.caps[3]);
     });
     later(4400, demoRun);
   }
