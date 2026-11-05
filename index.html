@@ -250,6 +250,7 @@ body.n7 .tray { padding: 6px; }
 }
 .tile { transition: transform 150ms cubic-bezier(.3,.7,.3,1), width 380ms ease, height 380ms ease; z-index: 1; }
 .tile.moving { z-index: 2; }
+.tile.quick { transition: transform 80ms linear, width 380ms ease, height 380ms ease; }   /* one step of a multi-tile slide */
 .tile b {
   display: block; width: 100%; height: 100%;
   border-radius: 20%;
@@ -831,7 +832,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     document.querySelectorAll('[data-ta]').forEach(el => { if (el.dataset.enA === undefined) el.dataset.enA = el.getAttribute('aria-label'); el.setAttribute('aria-label', tr(el.dataset.enA)); });
   }
   applyStaticText();
-  const APP_VERSION = 'v3.20';
+  const APP_VERSION = 'v3.21';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -2020,7 +2021,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   // A line of four is worth 8 seconds at the start, tapering to 5 at the top of the ladder.
   const fourBonus = () => Math.round(8 - 3 * Math.max(0, rung) / (LADDER.length - 1));
   const NUMWORD = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen'];
-  let nColors = 7, grid = [], hole = N * N - 1, score = 0, moves = 0, busy = false, nextId = 1;
+  let nColors = 7, grid = [], hole = N * N - 1, score = 0, moves = 0, busy = false, nextId = 1, chain = null;
   let totals = {};
   try { totals = JSON.parse(localStorage.getItem(LOGKEY) || '{}') || {}; } catch (e) { totals = {}; }
 
@@ -2348,7 +2349,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     try { music.setRate(1); } catch (e) {}
     buildWells();
     const b = dailyBoard(dailyDay);
-    score = 0; moves = 0; busy = false;
+    score = 0; moves = 0; busy = false; chain = null;
     build(b.cols, b.hole);
     renderStats(); renderLog();
   }
@@ -2562,7 +2563,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     const cols = Array(N * N).fill(null);
     const h = N * N - 1;
     recolor(cols, [...Array(N * N).keys()].filter(i => i !== h));
-    score = 0; moves = 0; busy = false;
+    score = 0; moves = 0; busy = false; chain = null;
     build(cols, h);
     if (startLv >= 3) addStones(LADDER[rung][2]);
     checkSurvive(true);
@@ -2593,7 +2594,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     grid.forEach((t, i) => { if (t) t.el.classList.toggle('can', adjacent(i, hole)); });
   }
 
-  function move(idx, fromReplay) {
+  function move(idx, fromReplay, quick) {
     if (replaying && !fromReplay) return;
     if (busy || over || !grid[idx] || !adjacent(idx, hole)) return;
     if (mode === 'daily') dailyMoves.push(idx);
@@ -2602,6 +2603,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     const t = grid[idx], dest = hole;
     grid[hole] = t; grid[idx] = null;
     t.el.classList.add('moving');
+    t.el.classList.toggle('quick', !!quick);
     t.el.style.transform = pos(hole);
     hole = idx;
     moves++;
@@ -2614,7 +2616,31 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     tally(1, 0);
     markMovable();
     renderStats();
-    setTimeout(() => { t.el.classList.remove('moving'); resolve(dest); }, 160);
+    setTimeout(() => { t.el.classList.remove('moving', 'quick'); resolve(dest); }, quick ? 85 : 160);
+  }
+
+  // Tap a tile further along the gap's row or column: the tiles in between slide one after another, as in the
+  // 15 puzzle. Each tile is still one move (move counts, replays and par are unchanged) and each step resolves
+  // lines exactly as separate taps would. A new tap or a new game cancels the rest of the chain.
+  function slideTo(idx) {
+    if (replaying || over || !grid[idx]) return;
+    if (adjacent(idx, hole)) { chain = null; move(idx); return; }
+    const r = Math.floor(idx / N), c = idx % N, hr = Math.floor(hole / N), hc = hole % N;
+    if ((r !== hr && c !== hc) || busy) return;
+    const step = r === hr ? Math.sign(c - hc) : Math.sign(r - hr) * N;
+    const cells = [];
+    for (let i = hole + step; ; i += step) { cells.push(i); if (i === idx) break; }
+    const token = chain = {};
+    const next = () => {
+      if (chain !== token) return;
+      if (over || !cells.length) { chain = null; return; }
+      if (busy) { setTimeout(next, 15); return; }
+      const i = cells.shift();
+      if (!grid[i] || !adjacent(i, hole)) { chain = null; return; }
+      move(i, false, true);
+      setTimeout(next, 15);
+    };
+    next();
   }
 
   function resolve(dest) {
@@ -2800,7 +2826,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     unlockSpeech();
     wantMusic();
     const idx = grid.findIndex(t => t && t.id === +el.dataset.id);
-    if (idx >= 0) move(idx);
+    if (idx >= 0) slideTo(idx);
   });
 
   document.addEventListener('keydown', (e) => {
