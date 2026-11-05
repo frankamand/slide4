@@ -23,7 +23,6 @@ img{max-width:100%}
 <body>
 <!-- Slide 4 · © 2026 Frank Amand. All rights reserved. -->
 <title>Tilescraper</title>
-<script src="js/samjs.min.js"></script>
 <style>
 @font-face{font-family:"Monoton";font-weight:400;font-style:normal;font-display:swap;src:url(fonts/monoton-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:"Chakra Petch";font-weight:400;font-style:normal;font-display:swap;src:url(fonts/chakra-petch-latin-400-normal.woff2) format("woff2")}
@@ -580,8 +579,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     <span class="voicepick" id="voicepick">
       <label class="sel" for="voice">Voice
         <select id="voice">
-          <option value="sam-deep">C64 SAM, deep</option>
-          <option value="sam">C64 SAM, classic</option>
+          <option value="sam-deep">C64 SAM (recorded)</option>
           <option value="off">Off</option>
         </select>
       </label>
@@ -833,7 +831,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     document.querySelectorAll('[data-ta]').forEach(el => { if (el.dataset.enA === undefined) el.dataset.enA = el.getAttribute('aria-label'); el.setAttribute('aria-label', tr(el.dataset.enA)); });
   }
   applyStaticText();
-  const APP_VERSION = 'v3.19';
+  const APP_VERSION = 'v3.20';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1031,6 +1029,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   function audio() {
     if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
     if (ac.state === 'suspended') ac.resume();
+    try { preloadVoice(); } catch (e) {}
     return ac;
   }
   function note(freq, t0, dur, type, vol) {
@@ -1559,7 +1558,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   try { best = parseInt(localStorage.getItem(BESTKEY) || '0', 10) || 0; } catch (e) {}
   try { const m = localStorage.getItem('slide4-mode'); if (m) modeSel.value = m; } catch (e) {}
 
-  // Voices: SAM, the C64's 1982 speech synthesiser (rendered in the page), or one of the device's own voices.
+  // Voices: SAM, the C64's 1982 speech synthesiser, as pre-rendered MP3 clips (audio/en/), or one of the device's own voices.
   document.getElementById('voiceslot').appendChild(document.getElementById('voicepick'));
   const voiceSel = document.getElementById('voice');
   // Full screen where the browser allows it (hidden where it doesn't).
@@ -1576,7 +1575,6 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
       document.body.classList.toggle('fs', !!document.fullscreenElement);
     });
   }
-  const SAMV = { 'sam-deep': { pitch: 110, speed: 82, mouth: 105, throat: 110 }, 'sam': { pitch: 64, speed: 72, mouth: 128, throat: 128 } };
   let deviceVoices = [];
   function listVoices() {
     try {
@@ -1603,8 +1601,8 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   const testBtn = document.getElementById('voicetest');
   testBtn.addEventListener('click', () => {
     unlockSpeech(); audio();
-    const [text, phon] = TESTS[testIdx];
-    say(text, true, phon);
+    const text = TESTS[testIdx];
+    say(text, true);
     testBtn.title = 'Played: ' + text;
     testIdx = (testIdx + 1) % TESTS.length;
   });
@@ -1614,35 +1612,48 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     speechUnlocked = true;
     try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
   }
-  const samCache = {};
-  const SURVIVE_PHON = 'THRIY KAHLER SERVAY5V';
-  // Test button cycles through every phrase the game says.
-  const TESTS = [['seven colors'], ['three color survive', SURVIVE_PHON], ['high score'], ['game over']];
+  // Every phrase the game says, each a clip audio/en/<words-with-dashes>.mp3 (SAM "deep": pitch 110, speed 82,
+  // mouth 105, throat 110; "three color survive" from the phonemes THRIY KAHLER SERVAY5V). About 6 KB each.
+  const VOICE_PHRASES = ['five colors', 'six colors', 'seven colors', 'eight colors', 'nine colors', 'ten colors', 'eleven colors',
+    'twelve colors', 'thirteen colors', 'fourteen colors', 'fifteen colors', 'level two', 'level three', 'level four',
+    'high score', 'overtime', 'game over', 'well done', 'three color survive'];
+  // Test button cycles through some of them.
+  const TESTS = ['seven colors', 'three color survive', 'high score', 'game over'];
   let testIdx = 0;
-  function samSay(text, cfg, phonetic) {
-    if (!window.SamJs || !audio()) return false;
-    const key = JSON.stringify(cfg) + (phonetic ? 'P:' : 'T:') + text;
-    let buf = samCache[key];
-    if (!buf) {
-      const data = new window.SamJs(cfg).buf32(text, !!phonetic);
-      if (!data || !data.length) return false;
-      buf = ac.createBuffer(1, data.length, 22050);
-      buf.getChannelData(0).set(data);
-      samCache[key] = buf;
+  const voiceBufs = {}, voiceLoads = {};
+  function loadClip(text) {
+    if (!voiceLoads[text]) {
+      voiceLoads[text] = fetch('audio/en/' + text.replace(/ /g, '-') + '.mp3')
+        .then(r => { if (!r.ok) throw new Error('voice ' + r.status); return r.arrayBuffer(); })
+        .then(b => new Promise((ok, no) => ac.decodeAudioData(b, ok, no)))
+        .then(buf => (voiceBufs[text] = buf))
+        .catch(e => { delete voiceLoads[text]; throw e; });
     }
-    const src = ac.createBufferSource(), g = ac.createGain();
-    src.buffer = buf; g.gain.value = 0.7;
-    src.connect(g); g.connect(ac.destination);
-    src.start(ac.currentTime + 0.02);
+    return voiceLoads[text];
+  }
+  let voicePreloaded = false;
+  function preloadVoice() {   // once sound is allowed: fetch and decode all clips, so the first call isn't late
+    if (voicePreloaded || !ac) return;
+    voicePreloaded = true;
+    VOICE_PHRASES.forEach(t => loadClip(t).catch(() => {}));
+  }
+  function clipSay(text) {
+    if (!VOICE_PHRASES.includes(text) || !audio()) return false;
+    const play = buf => {
+      const src = ac.createBufferSource(), g = ac.createGain();
+      src.buffer = buf; g.gain.value = 0.7;
+      src.connect(g); g.connect(ac.destination);
+      src.start(ac.currentTime + 0.02);
+    };
+    if (voiceBufs[text]) play(voiceBufs[text]); else loadClip(text).then(play).catch(() => {});
     return true;
   }
-  // `phon` is an optional SAM phoneme spelling, for words SAM's English rules get wrong.
-  function say(text, force, phon) {
+  function say(text, force) {
     if (!soundBox.checked && !force) return;
     const v = voiceSel.value;
     if (v === 'off') return;
     try {
-      if (SAMV[v]) { if (samSay(phon || text, SAMV[v], !!phon)) return; }
+      if (v === 'sam-deep' && clipSay(text)) return;
       const u = new SpeechSynthesisUtterance(text);
       const dv = v.startsWith('dev:') ? deviceVoices.find(x => x.name === v.slice(4)) : null;
       if (dv) u.voice = dv;
@@ -2570,7 +2581,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     survive = now;
     trayEl.classList.toggle('survive', now);
     if (now && !quiet && gs) gs.surv++;
-    if (now && !quiet) { banner(tr('3 color survive')); say('three color survive', false, SURVIVE_PHON); }
+    if (now && !quiet) { banner(tr('3 color survive')); say('three color survive'); }
   }
 
   function adjacent(a, b) {

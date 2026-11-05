@@ -1,13 +1,33 @@
 // Tilescraper service worker: keeps the game on the device so it opens instantly and works offline.
 // The page itself is fetched fresh when online (so updates arrive on the next launch);
-// everything else comes from the cache. Bump VERSION when fonts, icons or scripts change.
-const VERSION = 'slide4-v4';
+// everything else comes from the cache. Bump VERSION when fonts, icons, scripts or sound clips change.
+const VERSION = 'slide4-v5';
 const ASSETS = [
-  './', './index.html', './manifest.webmanifest', './js/samjs.min.js',
+  './', './index.html', './manifest.webmanifest',
   './fonts/monoton-latin-400-normal.woff2', './fonts/chakra-petch-latin-400-normal.woff2',
   './fonts/chakra-petch-latin-600-normal.woff2', './fonts/chakra-petch-latin-700-normal.woff2',
   './fonts/jetbrains-mono-latin-500-normal.woff2', './fonts/jetbrains-mono-latin-700-normal.woff2',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'
+  './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png',
+  // the game's voice: SAM clips, one per phrase
+  './audio/en/eight-colors.mp3',
+  './audio/en/eleven-colors.mp3',
+  './audio/en/fifteen-colors.mp3',
+  './audio/en/five-colors.mp3',
+  './audio/en/fourteen-colors.mp3',
+  './audio/en/game-over.mp3',
+  './audio/en/high-score.mp3',
+  './audio/en/level-four.mp3',
+  './audio/en/level-three.mp3',
+  './audio/en/level-two.mp3',
+  './audio/en/nine-colors.mp3',
+  './audio/en/overtime.mp3',
+  './audio/en/seven-colors.mp3',
+  './audio/en/six-colors.mp3',
+  './audio/en/ten-colors.mp3',
+  './audio/en/thirteen-colors.mp3',
+  './audio/en/three-color-survive.mp3',
+  './audio/en/twelve-colors.mp3',
+  './audio/en/well-done.mp3'
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

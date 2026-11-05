@@ -9,11 +9,11 @@ A match-4 sliding puzzle: slide tiles into the gap, line up four of a colour, an
 
 ## Updating
 Replace `index.html` (and any changed files). Installed copies pick up the new page the next time they are opened online.
-If fonts, icons or scripts change, also raise `VERSION` in `sw.js`.
+If fonts, icons, scripts or sound clips change, also raise `VERSION` in `sw.js`.
 
 ## Notes
 - High scores are stored per device in the browser.
-- `js/samjs.min.js` is sam-js, a reverse-engineered port of the 1982 C64 speech program SAM; see `js/samjs-README.md` for its licence notes before any commercial release.
+- `audio/en/*.mp3`: the game's voice, 19 phrases pre-rendered with SAM, the 1982 C64 speech program (via sam-js, a reverse-engineered port). SAM's rights belong to SoftVoice, Inc.; clear this with them before any commercial release.
 - Fonts: Monoton, Chakra Petch and JetBrains Mono (SIL Open Font License), from Fontsource.
 
 ## Copyright
