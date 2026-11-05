@@ -41,6 +41,9 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
+    // Only the game's own page; other pages under this folder (test copies in try/) go straight to the network.
+    const root = new URL('./', self.registration.scope).pathname, path = new URL(req.url).pathname;
+    if (path !== root && path !== root + 'index.html') return;
     // Page: network first, cached copy when offline.
     // no-cache: always check with GitHub, never reuse a stale HTTP-cached page.
     e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
