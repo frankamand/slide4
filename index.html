@@ -832,7 +832,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     document.querySelectorAll('[data-ta]').forEach(el => { if (el.dataset.enA === undefined) el.dataset.enA = el.getAttribute('aria-label'); el.setAttribute('aria-label', tr(el.dataset.enA)); });
   }
   applyStaticText();
-  const APP_VERSION = 'v3.21';
+  const APP_VERSION = 'v3.22';
   document.getElementById('ver').textContent = APP_VERSION;
   let N = 5;       // board size: 5 in stage 1, 6 after the level-up
   // Ordered so small colour counts stay well separated.
@@ -1695,6 +1695,8 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   }
   const stageLabel = () => (level === 2 ? '6×6 · ' : level === 3 ? tr('6×6 stones · ') : level === 4 ? tr('7×7 stones · ') : '') + tr('{n} colors', { n: nColors });
   const fmtClock = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+  // Daily results show tenths (times are stored to the tenth), so two runs that both look like 0:50 are told apart.
+  const fmtTenths = t => { const d = Math.round(t * 10) / 10, m = Math.floor(d / 60), s = (d - m * 60).toFixed(1).padStart(4, '0'); return m + ':' + (LANG === 'nl' ? s.replace('.', ',') : s); };
   function renderStep() {
     if (mode === 'daily') {
       timebar.classList.remove('soon');
@@ -2215,13 +2217,13 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     return floors.reverse().join('\n');
   }
   function dailyShareText() {
-    return tr('Tilescraper Daily #{n}', { n: dailyNo() }) + '\n⏱ ' + fmtClock(elapsed) + ' · ' + tr('{m} moves', { m: moves }) + parText(dailyDay) + '\n\n' + dailyTower()
+    return tr('Tilescraper Daily #{n}', { n: dailyNo() }) + '\n⏱ ' + fmtTenths(elapsed) + ' · ' + tr('{m} moves', { m: moves }) + parText(dailyDay) + '\n\n' + dailyTower()
       + '\n\n' + tr('Watch my run: ') + replayLink(dailyDay, dailyMoves);
   }
   // A stored run ({t, m, moves}) shared like a fresh one. The tower is rebuilt by playing its taps on the day's board;
   // old bests saved without taps share time and moves only.
   function runShareText(day, run) {
-    const head = tr('Tilescraper Daily #{n}', { n: dailyNo(day) }) + '\n⏱ ' + fmtClock(run.t) + ' · ' + tr('{m} moves', { m: run.m }) + parText(day);
+    const head = tr('Tilescraper Daily #{n}', { n: dailyNo(day) }) + '\n⏱ ' + fmtTenths(run.t) + ' · ' + tr('{m} moves', { m: run.m }) + parText(day);
     if (!run.moves || !run.moves.length) return head + '\n\n' + GAME_URL;
     return head + '\n\n' + dailyTower(runLog(day, run.moves)) + '\n\n' + tr('Watch my run: ') + replayLink(day, run.moves);
   }
@@ -2465,7 +2467,7 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
   function renderShare() {
     const run = shRuns[shIdx].run;
     [...shPick.children].forEach((btn, i) => btn.setAttribute('aria-pressed', String(i === shIdx)));
-    document.getElementById('sh-line').innerHTML = '<strong>⏱ ' + fmtClock(run.t) + '</strong> · ' + tr('{m} moves', { m: run.m }) + parText(shDay);
+    document.getElementById('sh-line').innerHTML = '<strong>⏱ ' + fmtTenths(run.t) + '</strong> · ' + tr('{m} moves', { m: run.m }) + parText(shDay);
     const hasTaps = run.moves && run.moves.length;
     const tw = document.getElementById('sh-tower');
     tw.textContent = hasTaps ? dailyTower(runLog(shDay, run.moves)) : ''; tw.hidden = !hasTaps;
@@ -2511,17 +2513,17 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     doneRun = run;
     const bestLine = first ? tr('First run today')
       : newFast && newFew ? tr('Your best today, on time and moves!')
-      : newFast ? tr('Fastest today! Fewest: {m} moves ({t})', { m: b.few.m, t: fmtClock(b.few.t) })
-      : newFew ? tr('Fewest moves today! Fastest: {t} ({m} moves)', { t: fmtClock(b.fast.t), m: b.fast.m })
-      : sameRun(b.fast, b.few) ? tr('Your best today: {t} · {m} moves', { t: fmtClock(b.fast.t), m: b.fast.m })
-      : tr('Best today: ⏱ {ft} ({fm} moves) · fewest {wm} moves ({wt})', { ft: fmtClock(b.fast.t), fm: b.fast.m, wm: b.few.m, wt: fmtClock(b.few.t) });
+      : newFast ? tr('Fastest today! Fewest: {m} moves ({t})', { m: b.few.m, t: fmtTenths(b.few.t) })
+      : newFew ? tr('Fewest moves today! Fastest: {t} ({m} moves)', { t: fmtTenths(b.fast.t), m: b.fast.m })
+      : sameRun(b.fast, b.few) ? tr('Your best today: {t} · {m} moves', { t: fmtTenths(b.fast.t), m: b.fast.m })
+      : tr('Best today: ⏱ {ft} ({fm} moves) · fewest {wm} moves ({wt})', { ft: fmtTenths(b.fast.t), fm: b.fast.m, wm: b.few.m, wt: fmtTenths(b.few.t) });
     overEl.querySelector('h2').textContent = tr('All clear');
     dTower.textContent = dailyTower(); dTower.hidden = false; dShare.hidden = false; overEl.classList.add('daily');
     // test mode: the exact moves per colour behind the tower, in clearing order
     let prevM = 0;
     dExact.textContent = dailyLog.map(([c, m]) => { const n = m - prevM; prevM = m; return SQUARES[c] + ' ' + n; }).join(' · ');
     dExact.hidden = false;
-    overText.innerHTML = tr('Daily #{n}', { n: dailyNo() }) + '<br><strong>' + fmtClock(elapsed) + '</strong> · ' + tr('{m} moves', { m: moves }) + parText(dailyDay) + '<br>' + bestLine;
+    overText.innerHTML = tr('Daily #{n}', { n: dailyNo() }) + '<br><strong>' + fmtTenths(elapsed) + '</strong> · ' + tr('{m} moves', { m: moves }) + parText(dailyDay) + '<br>' + bestLine;
     iniEl.hidden = true; overBtns.hidden = false; statCopy.hidden = true;
     sendStats('done');
     overEl.hidden = false;
@@ -2972,8 +2974,8 @@ h1.logo { font-size: clamp(1.6rem, 10vw, 2.6rem); line-height: 1.1; text-align: 
     if (!has) { homeDay = st.today; dayEl.innerHTML = tr('Today') + ' <span>· ' + tr('Daily #{n}', { n: dailyNo(st.today) }) + tr(', not played yet') + '</span>'; }
     const row = (k, v, x) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="k"></span><span class="v"></span><span class="x"></span>'; r.children[0].textContent = k; r.children[1].textContent = v; r.children[2].textContent = x; runsEl.appendChild(r); };
     if (has) {
-      if (sameRun(b.fast, b.few)) row(tr('Best'), fmtClock(b.fast.t), tr('{m} moves', { m: b.fast.m }));
-      else { if (b.fast) row(tr('Fastest'), fmtClock(b.fast.t), tr('{m} moves', { m: b.fast.m })); if (b.few) row(tr('Fewest'), tr('{m} moves', { m: b.few.m }), fmtClock(b.few.t)); }
+      if (sameRun(b.fast, b.few)) row(tr('Best'), fmtTenths(b.fast.t), tr('{m} moves', { m: b.fast.m }));
+      else { if (b.fast) row(tr('Fastest'), fmtTenths(b.fast.t), tr('{m} moves', { m: b.fast.m })); if (b.few) row(tr('Fewest'), tr('{m} moves', { m: b.few.m }), fmtTenths(b.few.t)); }
     }
     runsEl.hidden = !has;
     document.getElementById('sp-dshare').hidden = !has;
